@@ -1,0 +1,10 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/booking/route": "/api/booking",
+  "/api/cron/odds/route": "/api/cron/odds",
+  "/api/picks/route": "/api/picks",
+  "/api/results/route": "/api/results",
+  "/auth/callback/route": "/auth/callback",
+  "/page": "/"
+}
