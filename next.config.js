@@ -1,1 +1,1 @@
-module.exports={reactStrictMode:true}
+module.exports={reactStrictMode:true,experimental:{serverComponentsExternalPackages:["@grpc/grpc-js","@protobuf-ts/grpc-transport"]}}
