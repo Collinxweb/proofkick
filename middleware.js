@@ -14,7 +14,8 @@ export async function middleware(req) {
   });
   const { data: { user } } = await supabase.auth.getUser();
   const p = req.nextUrl.pathname;
-  if (!user && (p.startsWith("/dashboard") || p.startsWith("/caution"))) return NextResponse.redirect(new URL("/", req.url));
+  const guarded = ["/dashboard", "/caution", "/bets", "/create", "/browse", "/profile"];
+  if (!user && guarded.some((g) => p.startsWith(g))) return NextResponse.redirect(new URL("/", req.url));
   return res;
 }
 export const config = { matcher: ["/((?!_next|.*\\..*).*)"] };
