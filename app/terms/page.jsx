@@ -1,0 +1,17 @@
+import Legal from "@/components/Legal";
+export const metadata = { title: "Terms of Service | ProofKick" };
+const S = [
+["1. About ProofKick","ProofKick is a football prediction platform. Users create rule-based strategies, the app records picks before kickoff, and results are settled to build a public track record. ProofKick is not a bookmaker, does not accept bets, and never holds, transfers or manages user money."],
+["2. Eligibility (18+)","You must be at least 18 years old, and of legal age for betting-related content where you live, to use ProofKick. If you are under 18 you must not create an account. We may suspend accounts we reasonably believe belong to minors."],
+["3. No guarantees, no advice","Picks, strategies, win rates and statistics are for information and entertainment only. They are not financial, investment or betting advice. Past performance does not predict future results. ProofKick does not promise profit or consistent high returns, and betting can lose you money."],
+["4. Responsible betting","Only bet money you can afford to lose. Betting is your own decision and responsibility. If gambling is harming you or someone you know, stop and seek support from a trusted person or a local support service."],
+["5. Third-party platforms and booking codes","Booking slips and codes are conveniences for third-party bookmakers we do not own or control. Odds, availability and acceptance are decided by those platforms and may differ from what ProofKick shows. You are responsible for following the rules of any platform you use, and for checking that betting is legal where you are."],
+["6. Your account","Keep your sign-in details secure. You are responsible for activity on your account. Provide accurate information and do not impersonate others or run multiple accounts to mislead other users about performance."],
+["7. Strategies, picks and public records","Strategies are versioned; changing rules creates a new version, and picks and results cannot be edited or deleted after they are locked. Your handle, strategies, picks and statistics are public by default. Verification data may be stored on third-party networks such as Walrus and Sui, which are public and permanent by design."],
+["8. Acceptable use","Do not manipulate records, abuse or overload the service, scrape it at scale, attempt to access other accounts, post unlawful or misleading content, or use ProofKick to promote betting to minors."],
+["9. Data sources","Fixtures, odds and results come from third-party providers and may be delayed, incomplete or wrong. We may void or correct a pick if source data was wrong, and we do not guarantee accuracy."],
+["10. Disclaimers and liability","ProofKick is provided as is and as available. To the extent permitted by law, we are not liable for betting losses, lost profits, or indirect or consequential damages arising from your use of the service or reliance on any pick, strategy or statistic."],
+["11. Termination","You may stop using ProofKick at any time. We may suspend or end access for breach of these terms or to protect the service. Locked picks and anchored records may remain visible after account closure."],
+["12. Changes and contact","We may update these terms and will post the new date here. Continued use means you accept the update. Governing law and contact: [add your legal entity, country and contact email before launch]."],
+];
+export default function Terms() { return <Legal title="Terms of Service" updated="24 October 2026" sections={S} />; }
