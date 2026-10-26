@@ -14,11 +14,23 @@ jobs:
         env:
           SUI_DEPLOYER_KEY: ${{ secrets.SUI_DEPLOYER_KEY }}
         run: |
+          set -euo pipefail
           printf 'y\nhttps://fullnode.mainnet.sui.io:443\nmainnet\n0\n' | sui client envs || true
           sui client switch --env mainnet
-          sui keytool import "$SUI_DEPLOYER_KEY" ed25519
-          ADDR=$(sui keytool list --json | jq -r '.[0].suiAddress')
+          sui keytool import "$SUI_DEPLOYER_KEY" ed25519 >/dev/null
+          ADDR=""
+          for A in $(sui keytool list --json | jq -r '.[].suiAddress'); do
+            N=$(sui client gas "$A" --json | jq 'length')
+            echo "address $A has $N SUI coin(s)"
+            if [ "$N" -gt 0 ]; then ADDR="$A"; fi
+          done
+          [ -n "$ADDR" ] || { echo "No funded mainnet address found. Fund the app wallet and re-run."; exit 1; }
           sui client switch --address "$ADDR"
+          echo "Publishing from $ADDR"
           cd move/proofkick
-          sui client publish --gas-budget 200000000 --json | tee out.json
-          echo "PACKAGE_ID=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' out.json)"
+          sui client publish --gas-budget 60000000 --json > out.txt || { cat out.txt; exit 1; }
+          sed -n '/^{/,$p' out.txt > pub.json
+          PKG=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' pub.json)
+          if [ -z "$PKG" ] || [ "$PKG" = "null" ]; then cat out.txt; echo "Publish failed"; exit 1; fi
+          echo "PACKAGE_ID=$PKG"
+          echo "### PACKAGE_ID: \`$PKG\`" >> "$GITHUB_STEP_SUMMARY"
