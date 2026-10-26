@@ -10,6 +10,10 @@ export const dynamic = "force-dynamic";
 export async function GET(req) {
   const u = new URL(req.url);
   if (u.searchParams.get("secret") !== process.env.CRON_SECRET) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (u.searchParams.get("env")) {
+    const names = ["SUI_NETWORK", "SUI_RPC_URL", "TATUM_API_KEY", "SERVER_SUI_KEY", "PACKAGE_ID", "CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY"];
+    return NextResponse.json(Object.fromEntries(names.map((n) => [n, Boolean(process.env[n])])));
+  }
   try {
     const verify = u.searchParams.get("verify");
     if (verify) return NextResponse.json({ receipt: await readReceipt(verify) });
