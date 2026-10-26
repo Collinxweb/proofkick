@@ -1,0 +1,24 @@
+name: Publish Move package
+on: workflow_dispatch
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Sui CLI
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/MystenLabs/suiup/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/suiup" install sui@mainnet -y
+      - name: Publish to mainnet
+        env:
+          SUI_DEPLOYER_KEY: ${{ secrets.SUI_DEPLOYER_KEY }}
+        run: |
+          printf 'y\nhttps://fullnode.mainnet.sui.io:443\nmainnet\n0\n' | sui client envs || true
+          sui client switch --env mainnet
+          sui keytool import "$SUI_DEPLOYER_KEY" ed25519
+          ADDR=$(sui keytool list --json | jq -r '.[0].suiAddress')
+          sui client switch --address "$ADDR"
+          cd move/proofkick
+          sui client publish --gas-budget 200000000 --json | tee out.json
+          echo "PACKAGE_ID=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' out.json)"

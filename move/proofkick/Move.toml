@@ -1,0 +1,6 @@
+[package]
+name = "proofkick"
+edition = "2024"
+
+[addresses]
+proofkick = "0x0"
