@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Wallet, Mail, ArrowRight, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
+import GoogleLogo from "@/components/GoogleLogo";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 const pill = "flex w-full items-center gap-3 rounded-full border px-3 py-2";
@@ -57,7 +58,7 @@ export default function Onboarding() {
         <p className="mb-4 text-center text-xs text-white/50">Choose how you want to sign in</p>
         <div className="space-y-2.5">
           <Row primary icon={<Wallet size={20} />} title="Connect Sui Wallet" sub="Coming soon · Web3" disabled />
-          <Row icon="G" title="Continue with Google" sub="Quick and easy" onClick={google} />
+          <Row icon={<span className="flex h-10 w-10 items-center justify-center rounded-full bg-white"><GoogleLogo size={20} /></span>} title="Continue with Google" sub="Quick and easy" onClick={google} />
           {mode === "menu" && <Row icon={<Mail size={20} />} title="Continue with Email" sub="Magic link · no password" onClick={() => setMode("email")} />}
           {mode === "email" && (
             <form onSubmit={magic} className={`${pill} border-accent/60 bg-white/[0.04] pr-2`}>

@@ -1,0 +1,11 @@
+alter table profiles add column if not exists full_name text;
+alter table profiles add column if not exists date_of_birth date;
+alter table profiles add column if not exists country text;
+alter table profiles add column if not exists avatar_url text;
+alter table profiles add column if not exists profile_completed_at timestamptz;
+alter table fixtures add column if not exists odds jsonb;
+alter table fixtures add column if not exists odds_updated_at timestamptz;
+insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
+create policy "avatars public read" on storage.objects for select using (bucket_id = 'avatars');
+create policy "avatars insert own" on storage.objects for insert to authenticated with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "avatars update own" on storage.objects for update to authenticated using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);

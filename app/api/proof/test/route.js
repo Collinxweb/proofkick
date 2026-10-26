@@ -47,14 +47,14 @@ export async function GET(req) {
     const record = { app: "proofkick", test: true, at: Date.now() };
     const recordHash = hashRecord(record);
     const out = await mintReceipt({ kind: 0, strategyId: "test", recordHash, tsMs: Date.now(), via });
-    let receipt = null;
+    let receipt = null, readError = null;
     for (let i = 0; i < 4 && out.objectId && !receipt; i++) {
-      try { receipt = await readReceipt(out.objectId, out.via); } catch {}
+      try { receipt = await readReceipt(out.objectId, out.via); } catch (e) { readError = String(e.message ?? e).slice(0, 160); }
       if (!receipt) await sleep(1200);
     }
     return NextResponse.json({
       server: serverAddress(), ...out, hash: hex(recordHash),
-      onchainMatches: receipt?.recordHash === hex(recordHash), immutable: receipt?.immutable, receipt,
+      onchainMatches: receipt?.recordHash === hex(recordHash), immutable: receipt?.immutable, receipt, readError,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e.message ?? e), stack: String(e.stack ?? "").split("\n").slice(0, 5) }, { status: 500 });

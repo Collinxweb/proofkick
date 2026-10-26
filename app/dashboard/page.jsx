@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Search, Bell, ArrowRight, Activity, ShieldCheck, Users, FileText } from "lucide-react";
 import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
+import Avatar from "@/components/Avatar";
+import ProfileGate from "@/components/ProfileGate";
 import StrategyCard from "@/components/StrategyCard";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -25,7 +27,7 @@ export default async function Dashboard() {
   const s = supabaseServer();
   const { data: { user } } = await s.auth.getUser();
   if (!user) redirect("/");
-  const { data: me } = await s.from("profiles").select("handle, caution_accepted_at").eq("id", user.id).single();
+  const { data: me } = await s.from("profiles").select("handle, caution_accepted_at, full_name, avatar_url, profile_completed_at").eq("id", user.id).single();
   if (!me?.caution_accepted_at) redirect("/caution");
 
   const [{ count: live }, { data: stats }] = await Promise.all([
@@ -66,7 +68,7 @@ export default async function Dashboard() {
         <div className="flex items-center gap-4 text-white/70">
           <Link href="/browse" aria-label="Search"><Search size={20} /></Link>
           <Bell size={20} />
-          <Link href="/profile" className="flex h-9 w-9 items-center justify-center rounded-full border border-accent/40 bg-white/10 text-sm font-semibold uppercase text-accent">{me.handle?.[0]}</Link>
+          <Link href="/profile"><Avatar url={me.avatar_url} name={me.full_name || me.handle} size={36} /></Link>
         </div>
       </header>
 
@@ -117,6 +119,7 @@ export default async function Dashboard() {
           </div>
         ))}
       </section>
+      <ProfileGate open={!me.profile_completed_at} userId={user.id} />
       <BottomNav />
     </main>
   );
