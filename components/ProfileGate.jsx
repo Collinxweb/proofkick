@@ -16,21 +16,22 @@ async function toJpeg(file) {
 }
 const field = "w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-accent";
 
-export default function ProfileGate({ open, userId }) {
+export default function ProfileGate({ open, userId, initial, onClose }) {
   const router = useRouter();
-  const [f, setF] = useState({ fullName: "", dob: "", country: "", preset: 0 });
+  const [f, setF] = useState({ fullName: initial?.fullName ?? "", dob: initial?.dob ?? "", country: initial?.country ?? "", preset: /^preset:\d$/.test(initial?.avatar ?? "") ? Number(initial.avatar.slice(7)) : 0 });
   const [file, setFile] = useState(null);
+  const [keep, setKeep] = useState(Boolean(initial?.avatar?.startsWith("http")));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   if (!open) return null;
   const max = new Date(); max.setFullYear(max.getFullYear() - 18);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-  const preview = file ? URL.createObjectURL(file) : `preset:${f.preset}`;
+  const preview = file ? URL.createObjectURL(file) : keep ? initial.avatar : `preset:${f.preset}`;
 
   async function submit(e) {
     e.preventDefault(); setBusy(true); setErr("");
     try {
-      let avatar = `preset:${f.preset}`;
+      let avatar = keep && !file ? initial.avatar : `preset:${f.preset}`;
       if (file) {
         const sb = supabaseBrowser(), path = `${userId}/avatar.jpg`;
         const { error } = await sb.storage.from("avatars").upload(path, await toJpeg(file), { upsert: true, contentType: "image/jpeg" });
@@ -40,6 +41,7 @@ export default function ProfileGate({ open, userId }) {
       const res = await saveProfile({ fullName: f.fullName, dob: f.dob, country: f.country, avatar });
       if (res?.error) throw new Error(res.error);
       router.refresh();
+      onClose?.();
     } catch (x) { setErr(x.message); } finally { setBusy(false); }
   }
 
@@ -51,10 +53,10 @@ export default function ProfileGate({ open, userId }) {
           <Avatar url={preview} name={f.fullName || "?"} size={64} />
           <div className="space-y-2">
             <div className="flex gap-2">{PRESETS.map((_, i) => (
-              <button type="button" key={i} onClick={() => { setFile(null); setF({ ...f, preset: i }); }} className={`rounded-full ${!file && f.preset === i ? "ring-2 ring-accent" : ""}`}><Avatar url={`preset:${i}`} name="" size={26} /></button>))}
+              <button type="button" key={i} onClick={() => { setFile(null); setKeep(false); setF({ ...f, preset: i }); }} className={`rounded-full ${!file && !keep && f.preset === i ? "ring-2 ring-accent" : ""}`}><Avatar url={`preset:${i}`} name="" size={26} /></button>))}
             </div>
             <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-accent"><Camera size={16} />Upload a photo
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setKeep(false); }} /></label>
           </div>
         </div>
         <input required className={field} placeholder="Full name" value={f.fullName} onChange={set("fullName")} maxLength={60} />
@@ -65,6 +67,7 @@ export default function ProfileGate({ open, userId }) {
         </select>
         {err && <p className="text-sm text-red-400">{err}</p>}
         <button disabled={busy} className="w-full rounded-full bg-accent py-3.5 font-semibold text-black disabled:opacity-50">{busy ? "Saving..." : "Save and continue"}</button>
+        {onClose && <button type="button" onClick={onClose} className="w-full text-sm text-white/50">Cancel</button>}
       </form>
     </div>
   );

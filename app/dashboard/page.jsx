@@ -27,7 +27,7 @@ export default async function Dashboard() {
   const s = supabaseServer();
   const { data: { user } } = await s.auth.getUser();
   if (!user) redirect("/");
-  const { data: me } = await s.from("profiles").select("handle, caution_accepted_at, full_name, avatar_url, profile_completed_at").eq("id", user.id).single();
+  const { data: me } = await s.from("profiles").select("handle, caution_accepted_at, avatar_url, profile_completed_at").eq("id", user.id).single();
   if (!me?.caution_accepted_at) redirect("/caution");
 
   const [{ count: live }, { data: stats }] = await Promise.all([
@@ -68,7 +68,7 @@ export default async function Dashboard() {
         <div className="flex items-center gap-4 text-white/70">
           <Link href="/browse" aria-label="Search"><Search size={20} /></Link>
           <Bell size={20} />
-          <Link href="/profile"><Avatar url={me.avatar_url} name={me.full_name || me.handle} size={36} /></Link>
+          <Link href="/profile"><Avatar url={me.avatar_url} name={me.handle} size={36} /></Link>
         </div>
       </header>
 

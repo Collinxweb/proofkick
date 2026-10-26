@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Wallet, Mail, ArrowRight, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import GoogleLogo from "@/components/GoogleLogo";
+import { signInWithWallet } from "@/lib/wallet";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 const pill = "flex w-full items-center gap-3 rounded-full border px-3 py-2";
@@ -29,6 +30,10 @@ export default function Onboarding() {
   async function google() {
     const { error } = await supabaseBrowser().auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirectTo() } });
     if (error) setMsg(error.message);
+  }
+  async function wallet() {
+    setBusy(true); setMsg("");
+    try { await signInWithWallet(); window.location.href = "/caution"; } catch (e) { setMsg(e.message); setBusy(false); }
   }
   async function magic(e) {
     e.preventDefault();
@@ -57,7 +62,7 @@ export default function Onboarding() {
         <h2 className="text-center text-lg font-semibold text-white">Get Started</h2>
         <p className="mb-4 text-center text-xs text-white/50">Choose how you want to sign in</p>
         <div className="space-y-2.5">
-          <Row primary icon={<Wallet size={20} />} title="Connect Sui Wallet" sub="Coming soon · Web3" disabled />
+          <Row primary icon={<Wallet size={20} />} title="Connect Sui Wallet" sub={busy ? "Waiting for your wallet..." : "Slush and other Sui wallets"} onClick={wallet} disabled={busy} />
           <Row icon={<span className="flex h-10 w-10 items-center justify-center rounded-full bg-white"><GoogleLogo size={20} /></span>} title="Continue with Google" sub="Quick and easy" onClick={google} />
           {mode === "menu" && <Row icon={<Mail size={20} />} title="Continue with Email" sub="Magic link · no password" onClick={() => setMode("email")} />}
           {mode === "email" && (

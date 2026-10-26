@@ -18,7 +18,7 @@ export async function GET(req) {
   const via = ["tatum", "public"].includes(u.searchParams.get("via")) ? u.searchParams.get("via") : undefined;
 
   if (u.searchParams.get("env")) {
-    const names = ["TATUM_API_KEY", "SERVER_SUI_KEY", "PACKAGE_ID", "CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY"];
+    const names = ["TATUM_API_KEY", "SERVER_SUI_KEY", "PACKAGE_ID", "CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY", "ODDS_API_KEY"];
     return NextResponse.json(Object.fromEntries(names.map((n) => [n, Boolean(process.env[n])])));
   }
 
