@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hashRecord, hex } from "@/lib/proof/hash";
 import { mintReceipt, serverAddress } from "@/lib/sui/anchor";
 import { readReceipt } from "@/lib/sui/read";
+import { rpc } from "@/lib/sui/rpc";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,13 @@ export async function GET(req) {
   if (u.searchParams.get("env")) {
     const names = ["SUI_NETWORK", "SUI_RPC_URL", "TATUM_API_KEY", "SERVER_SUI_KEY", "PACKAGE_ID", "CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY"];
     return NextResponse.json(Object.fromEntries(names.map((n) => [n, Boolean(process.env[n])])));
+  }
+  if (u.searchParams.get("diag")) {
+    const addr = (() => { try { return serverAddress(); } catch { return "0x0"; } })();
+    const probes = [["sui_getChainIdentifier", []], ["sui_getLatestCheckpointSequenceNumber", []], ["suix_getReferenceGasPrice", []], ["suix_getBalance", [addr]], ["suix_getCoins", [addr, "0x2::sui::SUI", null, 1]]];
+    const out = {};
+    for (const [m, p] of probes) { try { await rpc(m, p); out[m] = "ok"; } catch (e) { out[m] = String(e.message); } }
+    return NextResponse.json({ server: addr, methods: out });
   }
   try {
     const verify = u.searchParams.get("verify");
