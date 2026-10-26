@@ -22,6 +22,6 @@ export async function GET(req) {
       onchainMatches: receipt?.recordHash === hex(recordHash), immutable: receipt?.immutable, receipt,
     });
   } catch (e) {
-    return NextResponse.json({ error: String(e.message ?? e) }, { status: 500 });
+    return NextResponse.json({ error: String(e.message ?? e), stack: String(e.stack ?? "").split("\n").slice(0, 6) }, { status: 500 });
   }
 }
