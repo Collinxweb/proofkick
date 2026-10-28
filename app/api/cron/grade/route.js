@@ -5,6 +5,7 @@ import { hex } from "@/lib/proof/hash";
 import { RESULT_TAG, toText, hashOf } from "@/lib/proof/snapshot";
 import { memwalConfigured, saveBlob } from "@/lib/proof/memory";
 import { mintReceipt } from "@/lib/sui/anchor";
+import { proveProof } from "@/lib/proof/prove";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,12 @@ export async function GET(req) {
         report.blobs++;
       } catch (e) { report.notes.push(`blob: ${String(e.message ?? e).slice(0, 80)}`); }
     }
+  }
+  // Picks locked in the database whose Walrus snapshot or Sui receipt never finished: retry two per run.
+  if (memwalConfigured()) {
+    const { data: lag } = await db.from("picks").select("id").not("user_id", "is", null).or("memory_blob_id.is.null,anchor_object_id.is.null").limit(2);
+    report.proofRetries = [];
+    for (const p of lag ?? []) report.proofRetries.push(await proveProof(db, p.id));
   }
   return NextResponse.json(report);
 }

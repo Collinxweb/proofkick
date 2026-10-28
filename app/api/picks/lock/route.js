@@ -2,19 +2,15 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { hex } from "@/lib/proof/hash";
-import { PICK_TAG, buildSnapshot, toText, hashOf } from "@/lib/proof/snapshot";
-import { memwalConfigured, saveBlob } from "@/lib/proof/memory";
-import { mintReceipt } from "@/lib/sui/anchor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 const bad = (error, status) => NextResponse.json({ error }, { status });
 
 // POST { fixtureId, selection: "home"|"draw"|"away", note?, strategyVersionId? }
-// The pick is locked by the database first (server clock, before kick-off). Walrus and Sui steps follow and never block it.
+// Locks the pick in the database (server clock, before kick-off) and returns at once.
+// The Walrus snapshot and Sui receipt are a separate, retryable step: POST /api/picks/prove { pickId }.
 export async function POST(req) {
   const { data: { user } } = await supabaseServer().auth.getUser();
   if (!user) return bad("Sign in to lock a pick.", 401);
@@ -23,7 +19,7 @@ export async function POST(req) {
   const note = String(b.note ?? "").trim().slice(0, 300);
 
   const db = supabaseAdmin();
-  const { data: fx } = await db.from("fixtures").select("*").eq("id", b.fixtureId).maybeSingle();
+  const { data: fx } = await db.from("fixtures").select("id, kickoff_at, odds").eq("id", b.fixtureId).maybeSingle();
   if (!fx) return bad("Match not found.", 404);
   if (new Date(fx.kickoff_at) <= new Date()) return bad("Kick-off has passed. Picks lock before the match starts.", 409);
   const odds = Number(fx.odds?.[b.selection]);
@@ -40,23 +36,7 @@ export async function POST(req) {
   const { data: pick, error } = await db.from("picks").insert({
     id, user_id: user.id, source: versionId ? "rule" : "manual", strategy_version_id: versionId, fixture_id: fx.id,
     market: "h2h", selection: b.selection, odds_taken: odds, reasoning: note ? { note } : {}, nonce: randomUUID(),
-  }).select().single();
+  }).select("id, locked_at").single();
   if (error) return bad(/duplicate|unique/i.test(error.message) ? "You already locked this pick." : error.message, 409);
-
-  const proof = { snapshot: "skipped", anchor: "skipped" };
-  if (memwalConfigured()) {
-    try {
-      const snap = buildSnapshot({ pick, fixture: fx, reasoning: pick.reasoning });
-      const hash = hashOf(snap);
-      const { blobId } = await saveBlob(user.id, toText(PICK_TAG, snap));
-      await db.from("picks").update({ memory_blob_id: blobId, commitment_hash: hex(hash) }).eq("id", id);
-      Object.assign(proof, { snapshot: "saved", blobId });
-      try {
-        const a = await mintReceipt({ kind: 1, strategyId: id, recordHash: hash, ref: blobId, tsMs: Date.now() });
-        await db.from("picks").update({ anchor_digest: a.digest, anchor_object_id: a.objectId }).eq("id", id);
-        Object.assign(proof, { anchor: "anchored", digest: a.digest });
-      } catch (e) { proof.anchor = `failed: ${String(e.message ?? e).slice(0, 120)}`; }
-    } catch (e) { proof.snapshot = `failed: ${String(e.message ?? e).slice(0, 120)}`; }
-  }
-  return NextResponse.json({ ok: true, pickId: id, odds, lockedAt: pick.locked_at, proof });
+  return NextResponse.json({ ok: true, pickId: pick.id, odds, lockedAt: pick.locked_at });
 }

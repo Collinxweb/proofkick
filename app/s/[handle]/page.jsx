@@ -28,7 +28,7 @@ export default async function Statement({ params }) {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const { data: prof } = await sb.from("profiles").select("id, handle, avatar_url").eq("handle", params.handle).maybeSingle();
   if (!prof) notFound();
-  const { data: index } = await sb.from("picks").select("id, anchor_object_id, anchor_digest, result_anchor_digest").eq("user_id", prof.id);
+  const { data: index } = await sb.from("picks").select("id, anchor_object_id, anchor_digest, result_anchor_digest, memory_blob_id, selection, odds_taken, locked_at, fixtures(home_team, away_team)").eq("user_id", prof.id);
   const idx = Object.fromEntries((index ?? []).map((r) => [r.id, r]));
 
   // Numbers come from Walrus (decrypted by the server), not from database columns.
@@ -49,6 +49,7 @@ export default async function Statement({ params }) {
     r.object = o; r.digest = idx[r.id]?.anchor_digest;
   }));
 
+  const pendingProof = (index ?? []).filter((r) => !r.memory_blob_id);
   const asPick = (r) => ({ result: r.res?.result ?? "pending", odds_taken: r.snap.odds_taken, graded_at: r.res?.graded_at });
   const all = computeRecord(rows.map(asPick));
   const manual = computeRecord(rows.filter((r) => r.snap.source === "manual").map(asPick));
@@ -80,7 +81,13 @@ export default async function Statement({ params }) {
               {r.verified ? <a className="text-accent underline" href={`https://suiscan.xyz/mainnet/object/${r.object}`}>Verified on Sui</a> : <span className="text-white/40">Not anchored</span>}
             </div>
           </div>))}
-        {!rows.length && !walrusError && <p className="text-sm text-white/50">No locked picks yet.</p>}
+        {pendingProof.map((r) => (
+          <div key={r.id} className="rounded-2xl border border-dashed border-white/15 p-4 text-sm text-white/60">
+            <p className="font-semibold text-white">{r.fixtures?.home_team} vs {r.fixtures?.away_team}</p>
+            <p>{LABEL[r.selection]} at {r.odds_taken} · locked {when(r.locked_at)}</p>
+            <p className="mt-1 text-xs">Locked by the database. The Walrus snapshot and Sui receipt are still pending.</p>
+          </div>))}
+        {!rows.length && !pendingProof.length && !walrusError && <p className="text-sm text-white/50">No locked picks yet.</p>}
       </div>
       <p className="mt-8 text-xs leading-relaxed text-white/40">Each pick is saved to Walrus before kick-off. Its SHA-256 hash is minted into an immutable Sui receipt. “Verified” means the hash of the pick shown here equals the hash on chain. Results come only from the match data source. Voids are never counted as losses.</p>
     </main>
