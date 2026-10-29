@@ -75,11 +75,11 @@ export default function SlipCard({ slip, logo, avatar, qr }) {
       <div style={flex({ marginTop: "auto", alignItems: "center", justifyContent: "space-between" })}>
         <div style={flex({ flexDirection: "column" })}>
           <div style={flex({ fontSize: 34, fontWeight: 700 })}>Follow this prediction on ProofKick</div>
-          <div style={flex({ fontSize: 22, color: G, marginTop: 6 })}>{slip.demo ? "SAMPLE PREVIEW - NOT REAL PICKS" : "Scan to open the full record"}</div>
+          <div style={flex({ fontSize: 22, color: G, marginTop: 6 })}>{slip.demo ? "SAMPLE PREVIEW - NOT REAL PICKS" : qr ? "Scan to open the full record" : (slip.link ?? "")}</div>
         </div>
         {qr ? (
           <div style={flex({ padding: 10, background: "#fff", borderRadius: 14 })}>
-            <svg width={150} height={150} viewBox={`0 0 ${qr.n} ${qr.n}`}><path d={qr.d} fill="#000" /></svg>
+            <img src={qr} width={150} height={150} />
           </div>) : null}
       </div>
     </div>
