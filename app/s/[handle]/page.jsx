@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
 
 export default async function Statement({ params }) {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-  const { data: prof } = await sb.from("profiles").select("id, handle, avatar_url").eq("handle", params.handle).maybeSingle();
+  const { data: prof } = await sb.from("profiles").select("id, handle, avatar_url, bio").eq("handle", params.handle).maybeSingle();
   if (!prof) notFound();
   const { data: index } = await sb.from("picks").select("id, anchor_object_id, anchor_digest, result_anchor_digest, memory_blob_id, selection, odds_taken, locked_at, fixtures(home_team, away_team)").eq("user_id", prof.id);
   const idx = Object.fromEntries((index ?? []).map((r) => [r.id, r]));
@@ -62,6 +62,7 @@ export default async function Statement({ params }) {
       <div className="mt-8 flex items-center gap-4">
         <Avatar url={prof.avatar_url} name={prof.handle} size={64} />
         <div><h1 className="text-2xl font-semibold text-white">@{prof.handle}</h1>
+          {prof.bio && <p className="mt-1 text-sm text-white/70">{prof.bio}</p>}
           <span className={`mt-1 inline-block rounded-full border px-3 py-1 text-xs ${verifiedAll ? "border-accent text-accent" : "border-white/15 text-white/50"}`}>{verifiedAll ? "Verified on Sui" : "Verification pending"}</span></div>
       </div>
       <div className="mt-6 grid grid-cols-2 gap-3">{tiles.map(([k, v]) => <div key={k} className="rounded-2xl border border-white/10 bg-panel p-4"><p className="text-xs text-white/50">{k}</p><p className="text-xl font-semibold text-white">{v}</p></div>)}</div>
@@ -78,7 +79,7 @@ export default async function Statement({ params }) {
             <div className="mt-3 flex items-center justify-between text-xs">
               <span className={r.res ? (r.res.result === "won" ? "text-accent" : r.res.result === "lost" ? "text-red-400" : "text-white/60") : "text-white/50"}>
                 {r.res ? `${r.res.result.toUpperCase()}${r.res.final ? ` · ${r.res.final.home}-${r.res.final.away}` : ""}` : "Pending"}</span>
-              {r.verified ? <a className="text-accent underline" href={`https://suiscan.xyz/mainnet/object/${r.object}`}>Verified on Sui</a> : <span className="text-white/40">Not anchored</span>}
+              <span className="flex gap-3"><a className="text-white/60 underline" href={`/p/${r.id}`}>Share</a>{r.verified ? <a className="text-accent underline" href={`https://suiscan.xyz/mainnet/object/${r.object}`}>Verified on Sui</a> : <span className="text-white/40">Not anchored</span>}</span>
             </div>
           </div>))}
         {pendingProof.map((r) => (

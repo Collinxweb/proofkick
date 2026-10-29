@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ListChecks, Plus, Compass, User } from "lucide-react";
+import { Home, ListChecks, Plus, Compass, User } from "lucide-react";
 
 const tabs = [
+  { href: "/dashboard", label: "Home", Icon: Home },
   { href: "/bets", label: "My Bets", Icon: ListChecks },
   { href: "/create", label: "Create", Icon: Plus, main: true },
   { href: "/browse", label: "Browse", Icon: Compass },
@@ -14,7 +15,7 @@ export default function BottomNav() {
   const path = usePathname();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-ink/95 backdrop-blur">
-      <div className="mx-auto grid max-w-md grid-cols-4 items-end px-2 pb-2 pt-2">
+      <div className="mx-auto grid max-w-md grid-cols-5 items-end px-1 pb-2 pt-2">
         {tabs.map(({ href, label, Icon, main }) => {
           const active = path.startsWith(href);
           return (

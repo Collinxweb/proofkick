@@ -33,13 +33,14 @@ export default async function Profile() {
       <Link href="/dashboard"><Logo size={32} /></Link>
       <div className="mt-8 flex items-center gap-4">
         <Avatar url={p?.avatar_url} name={p?.full_name || p?.handle} size={72} />
-        <div className="min-w-0"><h1 className="truncate text-2xl font-semibold text-white">{p?.full_name || "Complete your profile"}</h1><p className="text-sm text-white/50">@{p?.handle}</p></div>
+        <div className="min-w-0"><h1 className="truncate text-2xl font-semibold text-white">{p?.full_name || "Complete your profile"}</h1><p className="text-sm text-white/50">@{p?.handle}</p>{p?.bio && <p className="mt-1 text-sm text-white/70">{p.bio}</p>}</div>
       </div>
       <div className="mt-6 divide-y divide-white/10 rounded-2xl border border-white/10 bg-panel">
         {rows.map(([k, v]) => <div key={k} className="flex justify-between gap-4 px-4 py-3 text-sm"><span className="text-white/50">{k}</span><span className="truncate text-white">{v}</span></div>)}
       </div>
       <div className="mt-4 flex items-center gap-3">
         <EditProfile userId={user.id} initial={{ fullName: p?.full_name ?? "", dob: p?.date_of_birth ?? "", country: p?.country ?? "", avatar: p?.avatar_url ?? "" }} />
+        <Link href="/settings" className="rounded-full border border-white/15 px-5 py-2 text-sm text-white/70">Username &amp; bio</Link>
         <form action={signOut}><button className="rounded-full border border-white/15 px-5 py-2 text-sm text-white/70">Sign out</button></form>
       </div>
       <h2 className="mt-8 text-lg font-semibold text-white">Your strategies</h2>
