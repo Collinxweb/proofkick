@@ -53,8 +53,8 @@ export default function Onboarding() {
 
       <section className="relative">
         <p className="mb-3 flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-white/50 [@media(max-height:640px)]:hidden"><span className="h-px w-8 bg-accent" />Welcome to ProofKick</p>
-        <h1 className="text-[clamp(30px,9vw,40px)] font-semibold leading-[1.08] text-white">Smarter <span className="text-accent">Football</span><br />Predictions.</h1>
-        <p className="mt-3 max-w-[16rem] text-sm text-white/55">Real strategies. Verified records. Built for those who think beyond the hype.</p>
+        <h1 className="text-[clamp(30px,9vw,40px)] font-semibold leading-[1.08] text-white">Make the call.<br /><span className="text-accent">Prove the record.</span></h1>
+        <p className="mt-3 max-w-[16rem] text-sm text-white/55">Every football call is timestamped on Sui and saved to Walrus before kick-off. Nobody can fake their record.</p>
       </section>
 
       <section className="relative rounded-3xl border border-white/10 bg-panel/90 p-4">

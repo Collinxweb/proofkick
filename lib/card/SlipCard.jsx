@@ -53,22 +53,14 @@ export default function SlipCard({ slip, logo, avatar, qr }) {
 
       <div style={flex({ marginTop: 26, padding: 26, borderRadius: 30, border: `1px solid ${G}`, background: "rgba(25,211,107,0.07)", alignItems: "center" })}>
         <div style={flex({ flexDirection: "column", width: 300 })}>
-          <div style={flex({ fontSize: 22, letterSpacing: 3, color: "rgba(255,255,255,0.7)" })}>TOTAL ODDS</div>
+          <div style={flex({ fontSize: 22, letterSpacing: 3, color: "rgba(255,255,255,0.7)" })}>ODDS AT CALL</div>
           <div style={flex({ fontSize: 76, fontWeight: 700, color: G })}>{slip.totalOdds}</div>
         </div>
         <div style={flex({ flexDirection: "column", flex: 1, paddingLeft: 26 })}>
-          {slip.stake ? (
-            <div style={flex({ flexDirection: "column" })}>
-              <div style={flex({ fontSize: 22, letterSpacing: 3, color: "rgba(255,255,255,0.7)" })}>STAKE</div>
-              <div style={flex({ fontSize: 32, fontWeight: 700 })}>{`${slip.stake} ${slip.currency ?? ""}`}</div>
-              <div style={flex({ fontSize: 22, letterSpacing: 3, color: "rgba(255,255,255,0.7)", marginTop: 8 })}>POTENTIAL RETURN</div>
-              <div style={flex({ fontSize: 32, fontWeight: 700, color: G })}>{`${slip.potential} ${slip.currency ?? ""}`}</div>
-            </div>
-          ) : (
-            <div style={flex({ flexDirection: "column", fontSize: 26, color: "rgba(255,255,255,0.8)" })}>
-              <div style={flex({ fontWeight: 700 })}>Locked before kick-off</div>
-              <div style={flex({ fontSize: 22, color: "rgba(255,255,255,0.55)", marginTop: 6 })}>Saved on Walrus, anchored on Sui.</div>
-            </div>)}
+          <div style={flex({ flexDirection: "column", fontSize: 26, color: "rgba(255,255,255,0.8)" })}>
+            <div style={flex({ fontWeight: 700 })}>Locked before kick-off</div>
+            <div style={flex({ fontSize: 22, color: "rgba(255,255,255,0.55)", marginTop: 6 })}>Saved on Walrus, timestamped on Sui.</div>
+          </div>
         </div>
       </div>
 

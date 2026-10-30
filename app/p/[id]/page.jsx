@@ -10,7 +10,7 @@ const anon = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.en
 
 async function load(id) {
   const sb = anon();
-  const { data: p } = await sb.from("picks").select("id, user_id, selection, fixtures(home_team, away_team)").eq("id", id).maybeSingle();
+  const { data: p } = await sb.from("picks").select("id, user_id, selection, anchor_digest, status, fixtures(home_team, away_team)").eq("id", id).maybeSingle();
   if (!p) return null;
   const { data: prof } = await sb.from("profiles").select("handle").eq("id", p.user_id).maybeSingle();
   return { p, handle: prof?.handle };
@@ -33,7 +33,8 @@ export default async function PickPage({ params }) {
       <Link href="/"><Logo size={32} /></Link>
       <img src={`/api/card/pick-${params.id}`} alt="Prediction slip" className="mt-6 w-full rounded-2xl border border-white/10" />
       <div className="mt-4"><ShareCard imageUrl={`/api/card/pick-${params.id}`} pageUrl={pageUrl} text={`${d.p.fixtures?.home_team} vs ${d.p.fixtures?.away_team}: my pick, locked before kick-off on ProofKick.`} /></div>
-      {d.handle && <Link href={`/s/${d.handle}`} className="mt-5 block text-center text-sm text-accent underline">See the full record of @{d.handle}</Link>}
+      {d.p.anchor_digest && <a href={`https://suiscan.xyz/mainnet/tx/${d.p.anchor_digest}`} target="_blank" rel="noreferrer" className="mt-4 block break-all text-center text-xs text-accent underline">Timestamped on Sui · tx {d.p.anchor_digest}</a>}
+      {d.handle && <Link href={`/u/${d.handle}`} className="mt-5 block text-center text-sm text-accent underline">See the full record of @{d.handle}</Link>}
     </main>
   );
 }

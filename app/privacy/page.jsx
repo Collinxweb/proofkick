@@ -1,7 +1,7 @@
 import Legal from "@/components/Legal";
 export const metadata = { title: "Privacy Policy | ProofKick" };
 const S = [
-["1. What we collect","Account data: name, date of birth, country, avatar, email address, sign-in provider details (such as Google name and profile basics), and a Sui wallet address if you connect one. Activity data: strategies, picks, follows, selected betting platforms and booking codes you create. Technical data: basic logs such as IP address, device and browser type, used for security and reliability."],
+["1. What we collect","Account data: name, date of birth, country, avatar, email address, sign-in provider details (such as Google name and profile basics), and a Sui wallet address if you connect one. Activity data: predictions (calls), follows, likes and comments you create. Technical data: basic logs such as IP address, device and browser type, used for security and reliability."],
 ["2. What is public","Your handle, strategies, locked picks, results and statistics are public by default because verifiable records are the purpose of ProofKick. Your email address is never shown publicly."],
 ["3. Why we use it","To run your account, lock and settle picks, calculate records, prevent fraud and abuse, keep the service secure, and improve the product."],
 ["4. Walrus, Sui and permanence","To make records verifiable, hashes or copies of pick records may be stored using Walrus and anchored on the Sui network. Public blockchains and storage networks are permanent and cannot be edited or deleted by us. Do not put personal information in strategy names, notes or reasoning."],

@@ -41,7 +41,7 @@ export async function GET(req) {
     let out = m ? settle(p.selection, m) : null;
     if (!out && now - new Date(fx.kickoff_at).getTime() > 10 * 864e5) out = { result: "void" }; // no source result after 10 days: void, never a loss
     if (!out) { report.unmatched++; continue; }
-    const upd = { status: out.result, graded_at: new Date().toISOString(), settled_at: new Date().toISOString() };
+    const upd = { status: out.result, graded_at: new Date().toISOString(), settled_at: new Date().toISOString(), grader: "football-data.org" };
     if (out.result !== "void") Object.assign(upd, { final_home: out.home, final_away: out.away });
     const { error: ue } = await db.from("picks").update(upd).eq("id", p.id).eq("status", "pending");
     if (ue) { report.notes.push(ue.message); continue; }
@@ -51,12 +51,12 @@ export async function GET(req) {
 
   // Result blobs are slow, so a few per run; any left over are picked up by the next run.
   if (memwalConfigured()) {
-    const { data: todo } = await db.from("picks").select("id, user_id, status, final_home, final_away, graded_at, memory_blob_id, commitment_hash")
+    const { data: todo } = await db.from("picks").select("id, user_id, status, final_home, final_away, graded_at, memory_blob_id, commitment_hash, grader")
       .is("result_blob_id", null).not("memory_blob_id", "is", null).neq("status", "pending").limit(4);
     for (const p of todo ?? []) {
       try {
         const body = { v: 1, kind: "result", pick_id: p.id, snapshot_blob_id: p.memory_blob_id, snapshot_hash: p.commitment_hash, result: p.status,
-          final: p.status === "void" ? null : { home: p.final_home, away: p.final_away }, source: "football-data.org", graded_at: p.graded_at };
+          final: p.status === "void" ? null : { home: p.final_home, away: p.final_away }, source: p.grader ?? "football-data.org", graded_at: p.graded_at };
         const hash = hashOf(body);
         const { blobId } = await saveBlob(p.user_id, toText(RESULT_TAG, body));
         let digest = null;

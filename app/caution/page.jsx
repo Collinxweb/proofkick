@@ -13,8 +13,8 @@ async function accept() {
 
 const checks = [
   "I am 18 years old or older. ProofKick is not for anyone under 18.",
-  "I understand ProofKick does not promise profit or consistent high returns. Past results do not predict future results.",
-  "I will bet responsibly, only with money I can afford to lose, and I will stop if betting stops being fun.",
+  "I understand ProofKick records predictions. It is not a betting service, takes no bets and handles no money.",
+  "I understand a good record shows discipline, not guaranteed results. Past calls do not predict future ones.",
 ];
 
 export default async function Caution() {
@@ -36,7 +36,7 @@ export default async function Caution() {
         ))}
         <button className="w-full rounded-full bg-accent py-4 font-semibold text-black">I understand, continue</button>
       </form>
-      <p className="mt-6 text-center text-xs text-white/40">If gambling is affecting you, speak to a trusted person or a local support service.</p>
+      <p className="mt-6 text-center text-xs text-white/40">If betting is affecting you, speak to a trusted person or a local support service.</p>
     </main>
   );
 }

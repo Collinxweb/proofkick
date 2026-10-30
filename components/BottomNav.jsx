@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListChecks, Plus, Compass, User } from "lucide-react";
+import { Rss, Search, Plus, ListChecks, User } from "lucide-react";
 
 const tabs = [
-  { href: "/dashboard", label: "Home", Icon: Home },
-  { href: "/bets", label: "My Bets", Icon: ListChecks },
-  { href: "/create", label: "Create", Icon: Plus, main: true },
-  { href: "/browse", label: "Browse", Icon: Compass },
+  { href: "/feed", label: "Feed", Icon: Rss },
+  { href: "/browse", label: "Browse", Icon: Search },
+  { href: "/create", label: "Call", Icon: Plus, main: true },
+  { href: "/bets", label: "My Calls", Icon: ListChecks },
   { href: "/profile", label: "Profile", Icon: User },
 ];
 
