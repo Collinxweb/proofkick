@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import Avatar from "@/components/Avatar";
 import FollowButton from "@/components/FollowButton";
 import { supabaseServer } from "@/lib/supabase/server";
+import Leaderboard from "@/components/Leaderboard";
 import { summarize } from "@/lib/calls";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,15 @@ export default async function Browse({ searchParams }) {
   ]);
   const following = new Set((mine ?? []).map((f) => f.followee_id));
 
+  // Leaderboard data: graded calls only, in a compact shape the browser aggregates.
+  const minGraded = Number(process.env.NEXT_PUBLIC_MIN_GRADED ?? 10);
+  const { data: graded } = await s.from("picks").select("user_id, status, odds_taken, closing_odds, fixtures(league)").in("status", ["won", "lost"]).not("user_id", "is", null).limit(3000);
+  const uids = [...new Set((graded ?? []).map((g) => g.user_id))];
+  const { data: lbUsers } = uids.length ? await s.from("profiles").select("id, handle, avatar_url").in("id", uids) : { data: [] };
+  const uIndex = Object.fromEntries(uids.map((id, i) => [id, i]));
+  const lbRows = (graded ?? []).map((g) => [uIndex[g.user_id], g.status === "won" ? 1 : 0, g.closing_odds ? Number(g.odds_taken) / Number(g.closing_odds) - 1 : null, g.fixtures?.league ?? null]);
+  const lbMap = Object.fromEntries((lbUsers ?? []).map((p) => [uIndex[p.id], { handle: p.handle, avatar_url: p.avatar_url }]));
+
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 pb-28 pt-5">
       <Link href="/create"><Logo size={32} /></Link>
@@ -48,7 +58,8 @@ export default async function Browse({ searchParams }) {
         <Search size={16} className="text-white/40" />
         <input name="q" defaultValue={q} placeholder="Search username" className="w-full bg-transparent py-3 text-sm text-white outline-none" />
       </form>
-      <p className="mt-4 text-xs uppercase tracking-wider text-white/40">{q ? `Results for "${q}"` : "Recently active callers"}</p>
+      {!q && <Leaderboard rows={lbRows} users={lbMap} minGraded={minGraded} />}
+      <p className="mt-6 text-xs uppercase tracking-wider text-white/40">{q ? `Results for "${q}"` : "Recently active callers"}</p>
       <div className="mt-2 space-y-3">
         {people.map((p) => {
           const r = summarize((picks ?? []).filter((x) => x.user_id === p.id));

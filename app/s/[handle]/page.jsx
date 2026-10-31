@@ -7,6 +7,7 @@ import { fromText, hashOf } from "@/lib/proof/snapshot";
 import { hex } from "@/lib/proof/hash";
 import { computeRecord } from "@/lib/proof/record";
 import { readReceipt } from "@/lib/sui/read";
+import ProfileFollow from "@/components/ProfileFollow";
 
 export const revalidate = 120;
 export const maxDuration = 60;
@@ -28,7 +29,7 @@ export default async function Statement({ params }) {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const { data: prof } = await sb.from("profiles").select("id, handle, avatar_url, bio").eq("handle", params.handle).maybeSingle();
   if (!prof) notFound();
-  const { data: index } = await sb.from("picks").select("id, anchor_object_id, anchor_digest, result_anchor_digest, memory_blob_id, selection, odds_taken, locked_at, fixtures(home_team, away_team)").eq("user_id", prof.id);
+  const { data: index } = await sb.from("picks").select("id, anchor_object_id, anchor_digest, result_anchor_digest, memory_blob_id, selection, odds_taken, locked_at, closing_odds, fixtures(home_team, away_team)").eq("user_id", prof.id);
   const idx = Object.fromEntries((index ?? []).map((r) => [r.id, r]));
 
   // Numbers come from Walrus (decrypted by the server), not from database columns.
@@ -54,7 +55,10 @@ export default async function Statement({ params }) {
   const all = computeRecord(rows.map(asPick));
   const manual = computeRecord(rows.filter((r) => r.snap.source === "manual").map(asPick));
   const verifiedAll = rows.length > 0 && rows.every((r) => r.verified);
-  const tiles = [["Win rate", pct(all.winrate)], ["Streak", all.streak.type ? `${all.streak.n}${all.streak.type}` : "—"], ["Picks", `${all.graded} graded / ${all.total}`], ["Voids", all.voids]];
+  const clvs = (index ?? []).filter((r) => r.closing_odds).map((r) => Number(r.odds_taken) / Number(r.closing_odds) - 1);
+  const clvAvg = clvs.length ? clvs.reduce((a, b) => a + b, 0) / clvs.length : null;
+  const tiles = [["Hit rate", pct(all.winrate)], ["Streak", all.streak.type ? `${all.streak.n}${all.streak.type}` : "—"],
+    ["Calls", `${all.graded} graded / ${all.total}${all.voids ? ` (${all.voids} void)` : ""}`], ["Avg CLV", clvAvg == null ? "—" : `${clvAvg >= 0 ? "+" : ""}${(clvAvg * 100).toFixed(1)}%`]];
 
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 pb-16 pt-5">
@@ -65,7 +69,8 @@ export default async function Statement({ params }) {
           {prof.bio && <p className="mt-1 text-sm text-white/70">{prof.bio}</p>}
           <span className={`mt-1 inline-block rounded-full border px-3 py-1 text-xs ${verifiedAll ? "border-accent text-accent" : "border-white/15 text-white/50"}`}>{verifiedAll ? "Verified on Sui" : "Verification pending"}</span></div>
       </div>
-      <div className="mt-6 grid grid-cols-2 gap-3">{tiles.map(([k, v]) => <div key={k} className="rounded-2xl border border-white/10 bg-panel p-4"><p className="text-xs text-white/50">{k}</p><p className="text-xl font-semibold text-white">{v}</p></div>)}</div>
+      <div className="mt-4"><ProfileFollow userId={prof.id} /></div>
+      <div className="mt-4 grid grid-cols-2 gap-3">{tiles.map(([k, v]) => <div key={k} className="rounded-2xl border border-white/10 bg-panel p-4"><p className="text-xs text-white/50">{k}</p><p className="text-xl font-semibold text-white">{v}</p></div>)}</div>
       {manual.total > 0 && <p className="mt-3 text-xs text-white/50">Manual picks: {manual.wins}W {manual.losses}L, {manual.voids} void, win rate {pct(manual.winrate)}. Reported separately from strategy picks.</p>}
       {walrusError && <p className="mt-4 rounded-xl border border-white/10 p-3 text-xs text-white/60">Walrus read is unavailable right now ({walrusError}). Try again shortly.</p>}
       <h2 className="mt-8 text-lg font-semibold text-white">Pick timeline</h2>
