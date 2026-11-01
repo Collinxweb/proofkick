@@ -15,11 +15,27 @@ jobs:
           KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
         run: |
           set -euo pipefail
-          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 || true
-          sui client switch --env kick-testnet
+          if [ -z "${KICK_DEPLOYER_KEY:-}" ]; then
+            echo "Secret KICK_DEPLOYER_KEY is missing or empty. Add it under Settings > Secrets and variables > Actions, then re-run."
+            exit 1
+          fi
+          # Import the funded testnet key. Stdout is hidden because the CLI may print a recovery phrase when it creates
+          # its config; stderr stays visible so real errors show up.
           sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
-          ADDR=$(sui keytool list --json | jq -r '.[].suiAddress' | tail -1)
-          sui client switch --address "$ADDR"
+          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
+          sui client switch --env kick-testnet >/dev/null
+          # Publish only from an imported address that actually holds testnet SUI.
+          ADDR=""
+          for A in $(sui keytool list --json | jq -r '.[].suiAddress'); do
+            N=$(sui client gas "$A" --json | jq 'length')
+            echo "address $A: $N coin(s)"
+            if [ "$N" -gt 0 ]; then ADDR="$A"; fi
+          done
+          if [ -z "$ADDR" ]; then
+            echo "The imported key holds no testnet SUI. Fund it at faucet.sui.io, then re-run."
+            exit 1
+          fi
+          sui client switch --address "$ADDR" >/dev/null
           echo "Publishing from $ADDR"
           cd move/kick
           sui client publish --gas-budget 200000000 --json > out.txt || { cat out.txt; exit 1; }
