@@ -68,12 +68,22 @@ jobs:
             echo "STOPPED: active address is $ACTIVE, expected $EXPECTED_ADDRESS."
             exit 1
           fi
-          COINS=$(sui client gas "$EXPECTED_ADDRESS" --json 2>/dev/null || echo "[]")
-          if ! echo "$COINS" | jq -e 'type=="array" and length>0' >/dev/null 2>&1; then
-            echo "STOPPED: wallet $EXPECTED_ADDRESS holds no testnet SUI. Fund it at faucet.sui.io and re-run."
+          # The testnet node can lag a few seconds behind the faucet, so retry before giving up.
+          # Raw output is printed (addresses and coin IDs are public) so we can see exactly what the CLI reports.
+          FUNDED=""
+          for attempt in 1 2 3 4; do
+            RAW=$(sui client gas "$EXPECTED_ADDRESS" --json 2>&1 || true)
+            echo "Balance check $attempt for $EXPECTED_ADDRESS:"
+            echo "$RAW" | head -c 600
+            echo
+            if echo "$RAW" | jq -e 'type=="array" and length>0' >/dev/null 2>&1; then FUNDED=yes; break; fi
+            sleep 20
+          done
+          if [ -z "$FUNDED" ]; then
+            echo "STOPPED: the CLI sees no testnet SUI on $EXPECTED_ADDRESS. If the wallet shows SUI, check that it is this exact address (faucet.sui.io funds the address you paste), then re-run."
             exit 1
           fi
-          echo "Funded: $(echo "$COINS" | jq 'length') SUI coin(s)"
+          echo "Funded: $(echo "$RAW" | jq 'length') SUI coin(s)"
 
           echo "Step 5/5: publish the Kick package"
           cd move/kick
