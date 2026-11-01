@@ -44,7 +44,7 @@ export default function Onboarding() {
   }
 
   return (
-    <main className="relative mx-auto flex min-h-dvh max-w-md flex-col justify-between gap-5 overflow-hidden px-5 pb-5 pt-5">
+    <main className="relative mx-auto flex min-h-dvh max-w-md md:max-w-2xl flex-col justify-between gap-5 overflow-hidden px-5 pb-5 pt-5">
       <div className="pointer-events-none absolute -right-24 top-24 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
       <header className="relative flex items-center justify-between">
         <Logo size={34} />

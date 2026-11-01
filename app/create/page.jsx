@@ -25,7 +25,7 @@ export default async function Create() {
     hc: f.home_crest ?? f.home_logo ?? f.home_badge ?? null, ac: f.away_crest ?? f.away_logo ?? f.away_badge ?? null,
   }));
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-28 pt-5">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-28 pt-5">
       <Link href="/create"><Logo size={32} /></Link>
       <h1 className="mt-6 text-3xl font-semibold text-white">Make your call</h1>
       <p className="mt-1 text-sm text-white/55">Tap a price to call a match. Your call is timestamped on Sui and saved to Walrus before kick-off. It can't be edited or deleted.</p>

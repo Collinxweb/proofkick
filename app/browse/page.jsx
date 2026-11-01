@@ -50,7 +50,7 @@ export default async function Browse({ searchParams }) {
   const lbMap = Object.fromEntries((lbUsers ?? []).map((p) => [uIndex[p.id], { handle: p.handle, avatar_url: p.avatar_url }]));
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-28 pt-5">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-28 pt-5">
       <Link href="/create"><Logo size={32} /></Link>
       <h1 className="mt-6 text-3xl font-semibold text-white">Browse</h1>
       <p className="mt-1 text-sm text-white/55">Find callers by username and follow the ones whose record holds up.</p>

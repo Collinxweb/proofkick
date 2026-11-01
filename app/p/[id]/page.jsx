@@ -29,7 +29,7 @@ export default async function PickPage({ params }) {
   if (!d) notFound();
   const pageUrl = `${site()}/p/${params.id}`;
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-16 pt-5">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-16 pt-5">
       <Link href="/"><Logo size={32} /></Link>
       <img src={`/api/card/pick-${params.id}`} alt="Prediction slip" className="mt-6 w-full rounded-2xl border border-white/10" />
       <div className="mt-4"><ShareCard imageUrl={`/api/card/pick-${params.id}`} pageUrl={pageUrl} text={`${d.p.fixtures?.home_team} vs ${d.p.fixtures?.away_team}: my pick, locked before kick-off on ProofKick.`} /></div>

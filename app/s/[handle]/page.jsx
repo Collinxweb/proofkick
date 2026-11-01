@@ -71,7 +71,7 @@ export default async function Statement({ params }) {
     ["Calls", `${all.graded} graded / ${all.total}${all.voids ? ` (${all.voids} void)` : ""}`], ["Avg CLV", clvAvg == null ? "—" : `${clvAvg >= 0 ? "+" : ""}${(clvAvg * 100).toFixed(1)}%`]];
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-16 pt-5">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-16 pt-5">
       <Logo size={32} />
       <div className="mt-8 flex items-center gap-4">
         <Avatar url={prof.avatar_url} name={prof.handle} size={64} />

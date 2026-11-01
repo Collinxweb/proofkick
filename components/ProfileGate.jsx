@@ -47,7 +47,7 @@ export default function ProfileGate({ open, userId, initial, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/85 sm:items-center">
-      <form onSubmit={submit} className="max-h-[94dvh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl border border-white/10 bg-panel p-5 sm:rounded-3xl">
+      <form onSubmit={submit} className="max-h-[94dvh] w-full max-w-md md:max-w-2xl space-y-4 overflow-y-auto rounded-t-3xl border border-white/10 bg-panel p-5 sm:rounded-3xl">
         <div><h2 className="text-xl font-semibold text-white">Complete your profile</h2><p className="text-sm text-white/50">Required before you continue. You must be 18 or older.</p></div>
         <div className="flex items-center gap-4">
           <Avatar url={preview} name={f.fullName || "?"} size={64} />

@@ -51,7 +51,7 @@ export default function LockTest() {
   async function retry(id) { setBusy(true); await prove(id); setBusy(false); load(); }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 py-8">
       <h1 className="text-2xl font-semibold text-white">Lock a test pick</h1>
       <p className="mt-1 text-sm text-white/50">Manual pick, locked by the database, then saved to Walrus and anchored on Sui. Sign in first.</p>
       {handle && <Link className="mt-2 inline-block text-sm text-accent underline" href={`/s/${handle}`}>Open my statement</Link>}

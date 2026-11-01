@@ -24,7 +24,7 @@ export default async function Caution() {
   const { data: p } = await s.from("profiles").select("caution_accepted_at").eq("id", user.id).single();
   if (p?.caution_accepted_at) redirect("/dashboard");
   return (
-    <main className="mx-auto min-h-screen max-w-md px-6 py-10">
+    <main className="mx-auto min-h-screen max-w-md md:max-w-2xl px-6 py-10">
       <Logo />
       <h1 className="mt-10 text-3xl font-semibold text-white">Before you continue</h1>
       <p className="mt-2 text-white/55">Please read and confirm each point.</p>

@@ -29,7 +29,7 @@ export default async function Profile() {
   const rows = [["Country", country], ["Date of birth", p?.date_of_birth ?? "Not set"], email && ["Email", email],
     p?.sui_address && ["Wallet", `${p.sui_address.slice(0, 8)}…${p.sui_address.slice(-6)}`]].filter(Boolean);
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-28 pt-5">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-28 pt-5">
       <Link href="/dashboard"><Logo size={32} /></Link>
       <div className="mt-8 flex items-center gap-4">
         <Avatar url={p?.avatar_url} name={p?.full_name || p?.handle} size={72} />

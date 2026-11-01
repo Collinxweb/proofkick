@@ -17,7 +17,7 @@ export default async function MyCalls() {
   const sum = summarize(calls ?? []);
   const tiles = [["Hit rate", pct(sum.hit)], ["Graded", `${sum.graded}`], ["Pending", `${sum.pending}`], ["Avg CLV", sum.clv == null ? "—" : `${sum.clv >= 0 ? "+" : ""}${(sum.clv * 100).toFixed(1)}%`]];
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-28 pt-5">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-28 pt-5">
       <Link href="/create"><Logo size={32} /></Link>
       <h1 className="mt-6 text-3xl font-semibold text-white">My calls</h1>
       <p className="mt-1 text-sm text-white/55">Every call you locked, and how it was graded. Voids are never counted as losses.</p>

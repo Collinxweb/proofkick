@@ -100,7 +100,7 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
 
       {sheet && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/80">
-          <div className="max-h-[92dvh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-3xl border border-white/10 bg-panel p-5">
+          <div className="max-h-[92dvh] w-full max-w-md md:max-w-2xl space-y-3 overflow-y-auto rounded-t-3xl border border-white/10 bg-panel p-5">
             <div className="flex items-start justify-between"><div>
               <p className="text-xs text-white/50">{lname[sheet.fx.league]}</p>
               <p className="font-semibold text-white">{sheet.fx.home_team} vs {sheet.fx.away_team}</p></div>

@@ -29,7 +29,7 @@ export default async function Feed() {
   const { data: lk } = ids2.length ? await s.from("call_likes").select("pick_id, user_id").in("pick_id", ids2) : { data: [] };
   const likeInfo = (id) => ({ count: (lk ?? []).filter((l) => l.pick_id === id).length, liked: (lk ?? []).some((l) => l.pick_id === id && l.user_id === user.id) });
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-28 pt-5">
+    <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-28 pt-5">
       <Link href="/create"><Logo size={32} /></Link>
       <h1 className="mt-6 text-3xl font-semibold text-white">Feed</h1>
       <p className="mt-1 text-sm text-white/55">New calls from people you follow, newest first.</p>
