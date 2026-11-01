@@ -1,0 +1,39 @@
+name: Publish Kick package (testnet)
+on: workflow_dispatch
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Sui CLI
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/MystenLabs/suiup/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/suiup" install sui@testnet -y
+      - name: Publish to testnet
+        env:
+          KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
+        run: |
+          set -euo pipefail
+          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 || true
+          sui client switch --env kick-testnet
+          sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
+          ADDR=$(sui keytool list --json | jq -r '.[].suiAddress' | tail -1)
+          sui client switch --address "$ADDR"
+          echo "Publishing from $ADDR"
+          cd move/kick
+          sui client publish --gas-budget 200000000 --json > out.txt || { cat out.txt; exit 1; }
+          sed -n '/^{/,$p' out.txt > pub.json
+          PKG=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' pub.json)
+          FAUCET=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::kick_token::Faucet")) | .objectId' pub.json)
+          ADMIN=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::rounds::AdminCap")) | .objectId' pub.json)
+          if [ -z "$PKG" ] || [ "$PKG" = "null" ]; then cat out.txt; echo "Publish failed"; exit 1; fi
+          echo "KICK_PACKAGE_ID=$PKG"
+          echo "KICK_FAUCET_ID=$FAUCET"
+          echo "KICK_ADMIN_CAP_ID=$ADMIN"
+          {
+            echo "### Kick (testnet)"
+            echo "- Package: \`$PKG\`"
+            echo "- Faucet (shared): \`$FAUCET\`"
+            echo "- AdminCap: \`$ADMIN\`"
+          } >> "$GITHUB_STEP_SUMMARY"
