@@ -40,11 +40,16 @@ jobs:
           fi
           echo "present"
 
-          echo "Step 2/5: import the key into the local keystore"
-          show sui keytool import "$KICK_DEPLOYER_KEY" ed25519
+          echo "Step 2/5: create the CLI config (answers the setup prompts; output hidden because it prints a throwaway phrase)"
+          printf 'y\nhttps://fullnode.testnet.sui.io:443\nkick-testnet\n0\n' | sui client envs >/dev/null 2>&1 || true
+          if [ ! -f "$HOME/.sui/sui_config/client.yaml" ]; then
+            echo "STOPPED: the CLI config was not created at $HOME/.sui/sui_config/client.yaml"
+            exit 1
+          fi
+          echo "config present"
 
-          echo "Step 3/5: set up the testnet environment"
-          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
+          echo "Step 3/5: import the funded key into the keystore"
+          show sui keytool import "$KICK_DEPLOYER_KEY" ed25519
           show sui client switch --env kick-testnet
 
           echo "Step 4/5: confirm the key is the funded wallet"
