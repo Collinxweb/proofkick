@@ -17,42 +17,76 @@ jobs:
           EXPECTED_ADDRESS: "0x745c455dbb94ea713c13c8d3cf9c7c6b80cf7a78eb86c710a378087297657f97"
         run: |
           set -euo pipefail
+
+          # Runs a Sui command and prints its output. Key material and recovery phrases are removed before printing.
+          # Error text goes to stdout in some CLI versions, so output is always shown, never hidden.
+          show() {
+            local out status
+            set +e
+            out=$("$@" 2>&1)
+            status=$?
+            set -e
+            echo "$out" | sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' | grep -viE 'phrase|mnemonic' | tail -n 25 || true
+            if [ "$status" -ne 0 ]; then
+              echo "STOPPED: the command '$1' failed (see output above)."
+              exit 1
+            fi
+          }
+
+          echo "Step 1/5: check the secret is present"
           if [ -z "${KICK_DEPLOYER_KEY:-}" ]; then
-            echo "Secret KICK_DEPLOYER_KEY is missing or empty."
+            echo "STOPPED: secret KICK_DEPLOYER_KEY is missing or empty."
             exit 1
           fi
-          # Import the key. Stdout is hidden so no recovery phrase can reach the log.
-          sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
+          echo "present"
+
+          echo "Step 2/5: import the key into the local keystore"
+          show sui keytool import "$KICK_DEPLOYER_KEY" ed25519
+
+          echo "Step 3/5: set up the testnet environment"
           sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
-          sui client switch --env kick-testnet >/dev/null
-          # The key must be the funded wallet. Compare public addresses only.
-          ADDRS=$(sui keytool list --json | jq -r '.[].suiAddress')
-          echo "Addresses in the keystore:"; echo "$ADDRS"
+          show sui client switch --env kick-testnet
+
+          echo "Step 4/5: confirm the key is the funded wallet"
+          ADDRS=$(sui keytool list --json 2>/dev/null | jq -r '.[].suiAddress' || true)
+          echo "Addresses in keystore (public):"
+          echo "$ADDRS"
           if ! echo "$ADDRS" | grep -qx "$EXPECTED_ADDRESS"; then
-            echo "The KICK_DEPLOYER_KEY secret is NOT the funded wallet $EXPECTED_ADDRESS."
-            echo "Replace the secret with that wallet's private key, then re-run."
+            echo "STOPPED: the secret is not the funded wallet $EXPECTED_ADDRESS. Replace the secret with that wallet's key and re-run."
             exit 1
           fi
-          sui client switch --address "$EXPECTED_ADDRESS" >/dev/null
-          ACTIVE=$(sui client active-address | tr -d '[:space:]')
+          show sui client switch --address "$EXPECTED_ADDRESS"
+          ACTIVE=$(sui client active-address 2>/dev/null | tr -d '[:space:]' || true)
           if [ "$ACTIVE" != "$EXPECTED_ADDRESS" ]; then
-            echo "Active address is $ACTIVE, expected $EXPECTED_ADDRESS. Stopping before publish."
+            echo "STOPPED: active address is $ACTIVE, expected $EXPECTED_ADDRESS."
             exit 1
           fi
-          # Confirm the wallet actually holds testnet SUI before spending gas.
           COINS=$(sui client gas "$EXPECTED_ADDRESS" --json 2>/dev/null || echo "[]")
-          if ! echo "$COINS" | jq -e 'type=="array" and length>0' >/dev/null; then
-            echo "Wallet $EXPECTED_ADDRESS holds no testnet SUI. Fund it at faucet.sui.io, then re-run."
+          if ! echo "$COINS" | jq -e 'type=="array" and length>0' >/dev/null 2>&1; then
+            echo "STOPPED: wallet $EXPECTED_ADDRESS holds no testnet SUI. Fund it at faucet.sui.io and re-run."
             exit 1
           fi
-          echo "Publishing from $ACTIVE with $(echo "$COINS" | jq 'length') SUI coin(s)"
+          echo "Funded: $(echo "$COINS" | jq 'length') SUI coin(s)"
+
+          echo "Step 5/5: publish the Kick package"
           cd move/kick
-          sui client publish --gas-budget 200000000 --json > out.txt || { cat out.txt; exit 1; }
+          set +e
+          sui client publish --gas-budget 200000000 --json > out.txt 2>&1
+          PSTATUS=$?
+          set -e
+          if [ "$PSTATUS" -ne 0 ]; then
+            sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' out.txt | tail -n 60
+            echo "STOPPED: publish failed (output above)."
+            exit 1
+          fi
           sed -n '/^{/,$p' out.txt > pub.json
           PKG=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' pub.json)
           FAUCET=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::kick_token::Faucet")) | .objectId' pub.json)
           ADMIN=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::rounds::AdminCap")) | .objectId' pub.json)
-          if [ -z "$PKG" ] || [ "$PKG" = "null" ]; then cat out.txt; echo "Publish failed"; exit 1; fi
+          if [ -z "$PKG" ] || [ "$PKG" = "null" ]; then
+            echo "STOPPED: could not read the package ID from the publish output."
+            exit 1
+          fi
           echo "KICK_PACKAGE_ID=$PKG"
           echo "KICK_FAUCET_ID=$FAUCET"
           echo "KICK_ADMIN_CAP_ID=$ADMIN"
