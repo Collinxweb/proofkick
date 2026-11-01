@@ -1,0 +1,6 @@
+[package]
+name = "kick"
+edition = "2024"
+
+[addresses]
+kick = "0x0"
