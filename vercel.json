@@ -1,1 +1,1 @@
-{"crons":[{"path":"/api/cron/fixtures","schedule":"0 5 * * *"},{"path":"/api/cron/grade","schedule":"0 6 * * *"}]}
+{"crons":[{"path":"/api/cron/fixtures","schedule":"0 5 * * *"},{"path":"/api/cron/grade","schedule":"0 6 * * *"},{"path":"/api/cron/kick","schedule":"10 0 * * *"}]}
