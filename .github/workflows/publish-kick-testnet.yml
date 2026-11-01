@@ -13,21 +13,98 @@ jobs:
       - name: Publish to testnet
         env:
           KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
+          # Public address of the funded testnet wallet (not a secret).
+          EXPECTED_ADDRESS: "0x745c455dbb94ea713c13c8d3cf9c7c6b80cf7a78eb86c710a378087297657f97"
         run: |
           set -euo pipefail
-          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 || true
-          sui client switch --env kick-testnet
-          sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
-          ADDR=$(sui keytool list --json | jq -r '.[].suiAddress' | tail -1)
-          sui client switch --address "$ADDR"
-          echo "Publishing from $ADDR"
+
+          # Runs a Sui command and prints its output. Key material and recovery phrases are removed before printing.
+          # Error text goes to stdout in some CLI versions, so output is always shown, never hidden.
+          show() {
+            local out status
+            set +e
+            out=$("$@" 2>&1)
+            status=$?
+            set -e
+            echo "$out" | sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' | grep -viE 'phrase|mnemonic' | tail -n 25 || true
+            if [ "$status" -ne 0 ]; then
+              echo "STOPPED: the command '$1' failed (see output above)."
+              exit 1
+            fi
+          }
+
+          echo "Step 1/5: check the secret is present"
+          if [ -z "${KICK_DEPLOYER_KEY:-}" ]; then
+            echo "STOPPED: secret KICK_DEPLOYER_KEY is missing or empty."
+            exit 1
+          fi
+          echo "present"
+
+          echo "Step 2/5: create the CLI config (answers the setup prompts; output hidden because it prints a throwaway phrase)"
+          printf 'y\nhttps://fullnode.testnet.sui.io:443\nkick-testnet\n0\n' | sui client envs >/dev/null 2>&1 || true
+          if [ ! -f "$HOME/.sui/sui_config/client.yaml" ]; then
+            echo "STOPPED: the CLI config was not created at $HOME/.sui/sui_config/client.yaml"
+            exit 1
+          fi
+          echo "config present"
+
+          echo "Step 3/5: import the funded key into the keystore"
+          show sui keytool import "$KICK_DEPLOYER_KEY" ed25519
+          # The config prompt does not always create the named environment, so add it explicitly (no key material involved).
+          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
+          show sui client switch --env kick-testnet
+
+          echo "Step 4/5: confirm the key is the funded wallet"
+          ADDRS=$(sui keytool list --json 2>/dev/null | jq -r '.[].suiAddress' || true)
+          echo "Addresses in keystore (public):"
+          echo "$ADDRS"
+          if ! echo "$ADDRS" | grep -qx "$EXPECTED_ADDRESS"; then
+            echo "STOPPED: the secret is not the funded wallet $EXPECTED_ADDRESS. Replace the secret with that wallet's key and re-run."
+            exit 1
+          fi
+          show sui client switch --address "$EXPECTED_ADDRESS"
+          ACTIVE=$(sui client active-address 2>/dev/null | tr -d '[:space:]' || true)
+          if [ "$ACTIVE" != "$EXPECTED_ADDRESS" ]; then
+            echo "STOPPED: active address is $ACTIVE, expected $EXPECTED_ADDRESS."
+            exit 1
+          fi
+          # The testnet node can lag a few seconds behind the faucet, so retry before giving up.
+          # Raw output is printed (addresses and coin IDs are public) so we can see exactly what the CLI reports.
+          FUNDED=""
+          for attempt in 1 2 3 4; do
+            RAW=$(sui client gas "$EXPECTED_ADDRESS" --json 2>&1 || true)
+            echo "Balance check $attempt for $EXPECTED_ADDRESS:"
+            echo "$RAW" | head -c 600
+            echo
+            # The CLI returns an object: { "gasCoins": [ ... ], "addressSuiBalance": "1.00", ... }
+            if echo "$RAW" | jq -e '((.gasCoins // []) | length > 0) or ((.addressMistBalance // 0) > 0)' >/dev/null 2>&1; then FUNDED=yes; break; fi
+            sleep 20
+          done
+          if [ -z "$FUNDED" ]; then
+            echo "STOPPED: the CLI sees no testnet SUI on $EXPECTED_ADDRESS. If the wallet shows SUI, check that it is this exact address (faucet.sui.io funds the address you paste), then re-run."
+            exit 1
+          fi
+          echo "Funded: $(echo "$RAW" | jq '(.gasCoins // []) | length') SUI coin(s), total $(echo "$RAW" | jq -r '.addressSuiBalance // "0"') SUI"
+
+          echo "Step 5/5: publish the Kick package"
           cd move/kick
-          sui client publish --gas-budget 200000000 --json > out.txt || { cat out.txt; exit 1; }
+          set +e
+          sui client publish --gas-budget 200000000 --json > out.txt 2>&1
+          PSTATUS=$?
+          set -e
+          if [ "$PSTATUS" -ne 0 ]; then
+            sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' out.txt | tail -n 60
+            echo "STOPPED: publish failed (output above)."
+            exit 1
+          fi
           sed -n '/^{/,$p' out.txt > pub.json
           PKG=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' pub.json)
           FAUCET=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::kick_token::Faucet")) | .objectId' pub.json)
           ADMIN=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::rounds::AdminCap")) | .objectId' pub.json)
-          if [ -z "$PKG" ] || [ "$PKG" = "null" ]; then cat out.txt; echo "Publish failed"; exit 1; fi
+          if [ -z "$PKG" ] || [ "$PKG" = "null" ]; then
+            echo "STOPPED: could not read the package ID from the publish output."
+            exit 1
+          fi
           echo "KICK_PACKAGE_ID=$PKG"
           echo "KICK_FAUCET_ID=$FAUCET"
           echo "KICK_ADMIN_CAP_ID=$ADMIN"
