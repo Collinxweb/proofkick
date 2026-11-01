@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { notifyFollowers } from "@/lib/notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export async function POST(req) {
   const note = String(b.note ?? "").trim().slice(0, 300);
 
   const db = supabaseAdmin();
-  const { data: fx } = await db.from("fixtures").select("id, kickoff_at, odds").eq("id", b.fixtureId).maybeSingle();
+  const { data: fx } = await db.from("fixtures").select("id, kickoff_at, odds, home_team, away_team").eq("id", b.fixtureId).maybeSingle();
   if (!fx) return bad("Match not found.", 404);
   if (new Date(fx.kickoff_at) <= new Date()) return bad("Kick-off has passed. Picks lock before the match starts.", 409);
   const odds = Number(fx.odds?.[b.selection]);
@@ -38,5 +39,6 @@ export async function POST(req) {
     market: "h2h", selection: b.selection, odds_taken: odds, reasoning: note ? { note } : {}, nonce: randomUUID(),
   }).select("id, locked_at").single();
   if (error) return bad(/duplicate|unique/i.test(error.message) ? "You already locked this pick." : error.message, 409);
+  try { await notifyFollowers(db, user.id, { pickId: pick.id, match: `${fx.home_team} vs ${fx.away_team}`, selection: b.selection === "home" ? fx.home_team : b.selection === "away" ? fx.away_team : "Draw" }); } catch {}
   return NextResponse.json({ ok: true, pickId: pick.id, odds, lockedAt: pick.locked_at });
 }

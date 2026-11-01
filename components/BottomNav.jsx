@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { Rss, Search, Plus, ListChecks, User } from "lucide-react";
 
 const tabs = [
@@ -13,6 +15,20 @@ const tabs = [
 
 export default function BottomNav() {
   const path = usePathname();
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    const sb = supabaseBrowser();
+    let ch;
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return;
+      const { count } = await sb.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null);
+      setUnread(count ?? 0);
+      ch = sb.channel(`n-${user.id}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => setUnread((n) => n + 1)).subscribe();
+    })();
+    return () => { if (ch) sb.removeChannel(ch); };
+  }, []);
+  useEffect(() => { if (path.startsWith("/feed")) setUnread(0); }, [path]);
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-ink/95 backdrop-blur">
       <div className="mx-auto grid max-w-md grid-cols-5 items-end px-1 pb-2 pt-2">
@@ -26,6 +42,7 @@ export default function BottomNav() {
                 <Icon size={22} className={active ? "text-accent" : "text-white/50"} />
               )}
               <span className={active || main ? "text-accent" : "text-white/50"}>{label}</span>
+              {href === "/feed" && unread > 0 && <span className="absolute -mt-9 ml-5 h-2.5 w-2.5 rounded-full bg-accent" />}
             </Link>
           );
         })}
