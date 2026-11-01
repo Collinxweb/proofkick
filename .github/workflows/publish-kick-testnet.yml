@@ -50,6 +50,8 @@ jobs:
 
           echo "Step 3/5: import the funded key into the keystore"
           show sui keytool import "$KICK_DEPLOYER_KEY" ed25519
+          # The config prompt does not always create the named environment, so add it explicitly (no key material involved).
+          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
           show sui client switch --env kick-testnet
 
           echo "Step 4/5: confirm the key is the funded wallet"
