@@ -13,30 +13,39 @@ jobs:
       - name: Publish to testnet
         env:
           KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
+          # Public address of the funded testnet wallet (not a secret).
+          EXPECTED_ADDRESS: "0x745c455dbb94ea713c13c8d3cf9c7c6b80cf7a78eb86c710a378087297657f97"
         run: |
           set -euo pipefail
           if [ -z "${KICK_DEPLOYER_KEY:-}" ]; then
-            echo "Secret KICK_DEPLOYER_KEY is missing or empty. Add it under Settings > Secrets and variables > Actions, then re-run."
+            echo "Secret KICK_DEPLOYER_KEY is missing or empty."
             exit 1
           fi
-          # Import the funded testnet key. Stdout is hidden because the CLI may print a recovery phrase when it creates
-          # its config; stderr stays visible so real errors show up.
+          # Import the key. Stdout is hidden so no recovery phrase can reach the log.
           sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
           sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
           sui client switch --env kick-testnet >/dev/null
-          # Publish only from an imported address that actually holds testnet SUI.
-          ADDR=""
-          for A in $(sui keytool list --json | jq -r '.[].suiAddress'); do
-            N=$(sui client gas "$A" --json | jq 'length')
-            echo "address $A: $N coin(s)"
-            if [ "$N" -gt 0 ]; then ADDR="$A"; fi
-          done
-          if [ -z "$ADDR" ]; then
-            echo "The imported key holds no testnet SUI. Fund it at faucet.sui.io, then re-run."
+          # The key must be the funded wallet. Compare public addresses only.
+          ADDRS=$(sui keytool list --json | jq -r '.[].suiAddress')
+          echo "Addresses in the keystore:"; echo "$ADDRS"
+          if ! echo "$ADDRS" | grep -qx "$EXPECTED_ADDRESS"; then
+            echo "The KICK_DEPLOYER_KEY secret is NOT the funded wallet $EXPECTED_ADDRESS."
+            echo "Replace the secret with that wallet's private key, then re-run."
             exit 1
           fi
-          sui client switch --address "$ADDR" >/dev/null
-          echo "Publishing from $ADDR"
+          sui client switch --address "$EXPECTED_ADDRESS" >/dev/null
+          ACTIVE=$(sui client active-address | tr -d '[:space:]')
+          if [ "$ACTIVE" != "$EXPECTED_ADDRESS" ]; then
+            echo "Active address is $ACTIVE, expected $EXPECTED_ADDRESS. Stopping before publish."
+            exit 1
+          fi
+          # Confirm the wallet actually holds testnet SUI before spending gas.
+          COINS=$(sui client gas "$EXPECTED_ADDRESS" --json 2>/dev/null || echo "[]")
+          if ! echo "$COINS" | jq -e 'type=="array" and length>0' >/dev/null; then
+            echo "Wallet $EXPECTED_ADDRESS holds no testnet SUI. Fund it at faucet.sui.io, then re-run."
+            exit 1
+          fi
+          echo "Publishing from $ACTIVE with $(echo "$COINS" | jq 'length') SUI coin(s)"
           cd move/kick
           sui client publish --gas-budget 200000000 --json > out.txt || { cat out.txt; exit 1; }
           sed -n '/^{/,$p' out.txt > pub.json
