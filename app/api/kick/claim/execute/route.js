@@ -1,20 +1,26 @@
 import { NextResponse } from "next/server";
 import { kickClient } from "@/lib/kick/chain";
+import { decideExecute, hashBytes } from "@/lib/kick/sponsor";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-// Submits a claim the wallet has already signed. The server only relays it; it never holds the wallet's key.
+// Submits a claim the user's wallet signed, together with the sponsor's signature. Only transactions prepared here are accepted,
+// and each is accepted once: the bytes must match a stored hash that has not been used.
 export async function POST(req) {
-  const { bytes, signature } = await req.json().catch(() => ({}));
-  if (!bytes || !signature) return NextResponse.json({ error: "Missing signed transaction." }, { status: 400 });
+  const { bytes, signature, sponsorSignature } = await req.json().catch(() => ({}));
+  if (!bytes || !signature || !sponsorSignature) return NextResponse.json({ error: "Missing signed transaction." }, { status: 400 });
+  const buf = Buffer.from(bytes, "base64");
+  const db = supabaseAdmin();
+  const { data: row } = await db.from("kick_sponsored_txs").select("id, used_at").eq("bytes_hash", hashBytes(buf)).maybeSingle();
+  const decision = decideExecute(row);
+  if (!decision.ok) return NextResponse.json({ error: decision.error }, { status: 403 });
+  const { data: claimed } = await db.from("kick_sponsored_txs").update({ used_at: new Date().toISOString() }).eq("id", row.id).is("used_at", null).select("id");
+  if (!claimed?.length) return NextResponse.json({ error: "This claim was already submitted." }, { status: 409 });
   try {
-    const res = await kickClient().core.executeTransaction({
-      transaction: Buffer.from(bytes, "base64"),
-      signatures: [signature],
-      include: { effects: true },
-    });
+    const res = await kickClient().core.executeTransaction({ transaction: buf, signatures: [signature, sponsorSignature], include: { effects: true } });
     const done = res.Transaction ?? res.FailedTransaction;
     if (!done?.status?.success) {
       const why = String(done?.status?.error?.message ?? done?.status?.error ?? "");
