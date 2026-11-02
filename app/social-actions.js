@@ -13,7 +13,10 @@ export async function toggleFollow(userId) {
     return { following: false };
   }
   const { error } = await db.from("user_follows").insert({ follower_id: user.id, followee_id: userId });
-  return error ? { error: error.message } : { following: true };
+  if (error) return { error: error.message };
+  const { data: me } = await db.from("profiles").select("handle").eq("id", user.id).maybeSingle();
+  await db.from("notifications").insert({ user_id: userId, kind: "follow", payload: { handle: me?.handle ?? null } });
+  return { following: true };
 }
 
 // Likes exist only on graded calls (so nobody can pump a call before the result) and never on your own.
