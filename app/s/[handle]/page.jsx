@@ -8,7 +8,6 @@ import { hex } from "@/lib/proof/hash";
 import { computeRecord } from "@/lib/proof/record";
 import { readReceipt } from "@/lib/sui/read";
 import ProfileFollow from "@/components/ProfileFollow";
-import { credibility, WEIGHTS } from "@/lib/credibility";
 
 export const revalidate = 120;
 export const maxDuration = 60;
@@ -58,16 +57,7 @@ export default async function Statement({ params }) {
   const verifiedAll = rows.length > 0 && rows.every((r) => r.verified);
   const clvs = (index ?? []).filter((r) => r.closing_odds).map((r) => Number(r.odds_taken) / Number(r.closing_odds) - 1);
   const clvAvg = clvs.length ? clvs.reduce((a, b) => a + b, 0) / clvs.length : null;
-  // Likes count only if the liker has enough graded calls themselves, so fresh fake accounts add nothing.
-  const MIN = Number(process.env.NEXT_PUBLIC_MIN_GRADED ?? 10);
-  const { data: likes } = (index ?? []).length ? await sb.from("call_likes").select("user_id, pick_id").in("pick_id", index.map((r) => r.id)) : { data: [] };
-  const likerIds = [...new Set((likes ?? []).map((l) => l.user_id))];
-  const { data: likerPicks } = likerIds.length ? await sb.from("picks").select("user_id").in("user_id", likerIds).in("status", ["won", "lost"]) : { data: [] };
-  const gradedBy = {};
-  for (const p of likerPicks ?? []) gradedBy[p.user_id] = (gradedBy[p.user_id] ?? 0) + 1;
-  const qualifiedLikes = (likes ?? []).filter((l) => (gradedBy[l.user_id] ?? 0) >= MIN).length;
-  const cred = credibility({ wins: all.wins, graded: all.graded, avgClv: clvAvg, clvN: clvs.length, qualifiedLikes, minGraded: MIN });
-  const tiles = [["Credibility", cred ? `${cred.score}/100` : all.graded ? `Needs ${MIN} graded` : "—"], ["Hit rate", pct(all.winrate)], ["Streak", all.streak.type ? `${all.streak.n}${all.streak.type}` : "—"],
+  const tiles = [["Hit rate", pct(all.winrate)], ["Streak", all.streak.type ? `${all.streak.n}${all.streak.type}` : "—"],
     ["Calls", `${all.graded} graded / ${all.total}${all.voids ? ` (${all.voids} void)` : ""}`], ["Avg CLV", clvAvg == null ? "—" : `${clvAvg >= 0 ? "+" : ""}${(clvAvg * 100).toFixed(1)}%`]];
 
   return (
@@ -105,7 +95,6 @@ export default async function Statement({ params }) {
           </div>))}
         {!rows.length && !pendingProof.length && !walrusError && <p className="text-sm text-white/50">No locked picks yet.</p>}
       </div>
-      <p className="mt-3 text-[11px] leading-relaxed text-white/35">Credibility (experimental) = {WEIGHTS.record}% hit rate adjusted for sample size, {WEIGHTS.clv}% closing-line value, {WEIGHTS.social}% likes on graded calls from callers with {MIN}+ graded calls of their own ({qualifiedLikes} so far). It describes discipline, not future results.</p>
       <p className="mt-8 text-xs leading-relaxed text-white/40">Each pick is saved to Walrus before kick-off. Its SHA-256 hash is minted into an immutable Sui receipt. “Verified” means the hash of the pick shown here equals the hash on chain. Results come only from the match data source. Voids are never counted as losses.</p>
     </main>
   );
