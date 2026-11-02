@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, X } from "lucide-react";
 import { LEAGUES } from "@/lib/leagues";
+import SlipTray from "@/components/SlipTray";
 
 const LABEL = { home: "Home Win", draw: "Draw", away: "Away Win" };
 const SHORT = { home: "1", draw: "X", away: "2" };
@@ -27,6 +28,7 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
   const [busy, setBusy] = useState(false);
   const [steps, setSteps] = useState([]);
   const [done, setDone] = useState(null);
+  const [slip, setSlip] = useState([]);
 
   const shown = useMemo(() => {
     const today = ymd(new Date()), tomorrow = ymd(Date.now() + 864e5);
@@ -41,6 +43,11 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
     });
   }, [fixtures, league, mode, date]);
   const active = Number(Boolean(league)) + Number(mode !== "all");
+
+  function addToSlip() {
+    setSlip((s) => (s.some((x) => x.fixtureId === sheet.fx.id) ? s : [...s, { fixtureId: sheet.fx.id, label: `${sheet.fx.home_team} vs ${sheet.fx.away_team}`, selection: sheet.sel, odds: sheet.fx.odds[sheet.sel] }]));
+    close();
+  }
 
   function close() { setSheet(null); setNote(""); setSteps([]); setDone(null); }
 
@@ -98,6 +105,7 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
         {!shown.length && <p className="rounded-2xl border border-dashed border-white/15 p-6 text-center text-sm text-white/55">{fixtures.length ? "No matches fit these filters." : "No matches loaded yet."}</p>}
       </div>
 
+      {slip.length > 0 && <SlipTray legs={slip} onRemove={(id) => setSlip((s) => s.filter((x) => x.fixtureId !== id))} onDone={() => setSlip([])} />}
       {sheet && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/80">
           <div className="max-h-[92dvh] w-full max-w-md md:max-w-2xl space-y-3 overflow-y-auto rounded-t-3xl border border-white/10 bg-panel p-5">
@@ -119,6 +127,7 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
               </div>)}
             {!done && !steps.length && <p className="text-xs text-white/40">Posting locks this call. You can't edit or delete it.</p>}
             {!done && !steps.length && <button disabled={busy} onClick={post} className="w-full rounded-full bg-accent py-3.5 font-semibold text-black disabled:opacity-50">Lock my call</button>}
+            {!done && !steps.length && <button onClick={addToSlip} className="w-full rounded-full border border-accent/50 py-3 text-sm text-accent">Add to multi slip</button>}
             {(done || (steps.length > 0 && !busy)) && <button onClick={close} className="w-full rounded-full border border-white/15 py-3 text-sm text-white">Done</button>}
           </div>
         </div>)}

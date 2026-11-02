@@ -72,5 +72,11 @@ export async function GET(req) {
     report.proofRetries = [];
     for (const p of lag ?? []) report.proofRetries.push(await proveProof(db, p.id));
   }
+  try {
+    const { settlePendingSlips } = await import("@/lib/history/store");
+    report.slips = await settlePendingSlips(db);
+  } catch (e) {
+    report.slipsError = String(e.message ?? e).slice(0, 160);
+  }
   return NextResponse.json(report);
 }
