@@ -32,18 +32,22 @@ export default function KickClaim() {
       const account = accounts.find((a) => a.chains?.some((c) => c.startsWith("sui:"))) ?? accounts[0];
       if (!account) throw new Error("The wallet did not share an account.");
 
+      const post = (url, body) => fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
       setStatus({ text: "Preparing your claim..." });
-      const prep = await (await fetch("/api/kick/claim/prepare", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sender: account.address }) })).json();
+      const prep = await post("/api/kick/claim/prepare", { sender: account.address });
       if (prep.error) throw new Error(prep.error);
+      setStatus({ text: "Adding the gas..." });
+      const sp = await post("/api/kick/claim/sponsor", { sender: account.address, kind: prep.kind });
+      if (sp.error) throw new Error(sp.error);
 
       setStatus({ text: "Approve the claim in your wallet (Testnet). No SUI is needed; the app pays the gas." });
-      // Wallets expect a Transaction object, not raw bytes, so rebuild it from the server-prepared bytes.
-      const bytes = Uint8Array.from(atob(prep.bytes), (c) => c.charCodeAt(0));
+      // The wallet signs the complete transaction, built by the app with gas added.
+      const bytes = Uint8Array.from(atob(sp.bytes), (c) => c.charCodeAt(0));
       const transaction = Transaction.from(bytes);
       const { signature } = await w.features["sui:signTransaction"].signTransaction({ transaction, account, chain: "sui:testnet" });
 
       setStatus({ text: "Submitting..." });
-      const done = await (await fetch("/api/kick/claim/execute", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ bytes: prep.bytes, signature, sponsorSignature: prep.sponsorSignature }) })).json();
+      const done = await (await fetch("/api/kick/claim/execute", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ bytes: sp.bytes, signature, sponsorSignature: sp.sponsorSignature }) })).json();
       if (done.error) throw new Error(done.error);
       setStatus({ text: "Claimed 10,000 KICK (testnet play money).", digest: done.digest });
     } catch (e) {
