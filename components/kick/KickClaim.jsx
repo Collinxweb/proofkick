@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Transaction } from "@mysten/sui/transactions";
 
 // Wallet Standard lookup for a Sui wallet that can sign transactions (Slush, Kiwi, Mises).
 function findWallets(wait = 450) {
@@ -36,8 +37,10 @@ export default function KickClaim() {
       if (prep.error) throw new Error(prep.error);
 
       setStatus({ text: "Approve the claim in your wallet (Testnet). No SUI is needed; the app pays the gas." });
+      // Wallets expect a Transaction object, not raw bytes, so rebuild it from the server-prepared bytes.
       const bytes = Uint8Array.from(atob(prep.bytes), (c) => c.charCodeAt(0));
-      const { signature } = await w.features["sui:signTransaction"].signTransaction({ transaction: bytes, account, chain: "sui:testnet" });
+      const transaction = Transaction.from(bytes);
+      const { signature } = await w.features["sui:signTransaction"].signTransaction({ transaction, account, chain: "sui:testnet" });
 
       setStatus({ text: "Submitting..." });
       const done = await (await fetch("/api/kick/claim/execute", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ bytes: prep.bytes, signature, sponsorSignature: prep.sponsorSignature }) })).json();
