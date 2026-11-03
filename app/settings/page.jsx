@@ -3,6 +3,7 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
 import SettingsForm from "@/components/SettingsForm";
+import ThemeToggle from "@/components/ThemeToggle";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -17,6 +18,7 @@ export default async function Settings() {
       <Link href="/dashboard"><Logo size={32} /></Link>
       <h1 className="mt-8 text-3xl font-semibold text-white">Profile settings</h1>
       <SettingsForm initial={{ handle: p?.handle, bio: p?.bio }} />
+      <ThemeToggle />
       <BottomNav />
     </main>
   );

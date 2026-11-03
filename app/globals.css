@@ -1,2 +1,21 @@
 @tailwind base;@tailwind components;@tailwind utilities;
 body{background:#07090a;color:#e8ecef}
+
+/* Light theme (opt-in: html[data-theme="light"]). Remaps the dark utility classes the app uses. */
+html[data-theme="light"] body { background: #f5f7f6; color: #0b1110; }
+html[data-theme="light"] .bg-ink { background-color: #f5f7f6; }
+html[data-theme="light"] .bg-ink\/95 { background-color: rgba(245,247,246,0.95); }
+html[data-theme="light"] .bg-panel { background-color: #ffffff; }
+html[data-theme="light"] .bg-panel\/90 { background-color: rgba(255,255,255,0.92); }
+html[data-theme="light"] .bg-black\/30, html[data-theme="light"] .bg-black\/40, html[data-theme="light"] .bg-black\/50, html[data-theme="light"] .bg-black\/60, html[data-theme="light"] .bg-black\/80, html[data-theme="light"] .bg-black\/85, html[data-theme="light"] .bg-black\/30 { background-color: rgba(15,23,21,0.06); }
+html[data-theme="light"] .bg-white\/5, html[data-theme="light"] .bg-white\/10, html[data-theme="light"] .bg-white\/\[0\.03\], html[data-theme="light"] .bg-white\/\[0\.04\], html[data-theme="light"] .bg-white\/\[0\.05\], html[data-theme="light"] .bg-white\/\[0\.06\], html[data-theme="light"] .bg-white\/\[0\.08\] { background-color: rgba(15,23,21,0.05); }
+html[data-theme="light"] .border-white\/5, html[data-theme="light"] .border-white\/10, html[data-theme="light"] .border-white\/15, html[data-theme="light"] .border-white\/20, html[data-theme="light"] .border-white\/30 { border-color: rgba(15,23,21,0.14); }
+html[data-theme="light"] .text-white { color: #0b1110; }
+html[data-theme="light"] .text-white\/30, html[data-theme="light"] .text-white\/35 { color: rgba(11,17,16,0.45); }
+html[data-theme="light"] .text-white\/40 { color: rgba(11,17,16,0.5); }
+html[data-theme="light"] .text-white\/45, html[data-theme="light"] .text-white\/50 { color: rgba(11,17,16,0.6); }
+html[data-theme="light"] .text-white\/55, html[data-theme="light"] .text-white\/60 { color: rgba(11,17,16,0.68); }
+html[data-theme="light"] .text-white\/70, html[data-theme="light"] .text-white\/75 { color: rgba(11,17,16,0.78); }
+html[data-theme="light"] .text-white\/80 { color: rgba(11,17,16,0.85); }
+html[data-theme="light"] .text-accent { color: #0a8f48; }
+html[data-theme="light"] .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(15,23,21,0.06); }

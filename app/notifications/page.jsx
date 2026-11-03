@@ -14,6 +14,7 @@ function text(n) {
   if (n.kind === "call") return `@${p.handle} called ${p.selection} in ${p.match}`;
   if (n.kind === "like") return `@${p.handle} liked your call on ${p.match}`;
   if (n.kind === "follow") return `@${p.handle} started following you`;
+  if (n.kind === "comment") return `@${p.handle} commented on your call on ${p.match}`;
   return "Notification";
 }
 function target(n) {

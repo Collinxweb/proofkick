@@ -11,6 +11,9 @@ import Avatar from "@/components/Avatar";
 import MarkRead from "@/components/MarkRead";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CALL_COLS } from "@/lib/calls";
+import { loadSlips, loadSocial } from "@/lib/social/data";
+import { groupCalls } from "@/lib/social/group";
+import SlipTicket from "@/components/social/SlipTicket";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +29,11 @@ export default async function Home() {
   let q = s.from("picks").select(CALL_COLS).order("locked_at", { ascending: false }).limit(5);
   if (ids.length) q = q.in("user_id", ids);
   const { data: calls } = await q;
+  const callIds = (calls ?? []).map((c) => c.id);
+  const slips = await loadSlips(s, callIds);
+  const social = await loadSocial(s, callIds, user.id);
+  const items = groupCalls({ calls: calls ?? [], slips });
+  const feedIds = items.flatMap((it) => (it.type === "slip" ? [it.legs[0].id] : [it.c.id]));
   const uids = [...new Set((calls ?? []).map((c) => c.user_id))];
   const { data: profs } = uids.length ? await s.from("profiles").select("id, handle, avatar_url").in("id", uids) : { data: [] };
   const names = Object.fromEntries((profs ?? []).map((p) => [p.id, p.handle]));
@@ -37,7 +45,7 @@ export default async function Home() {
       <header className="flex items-center justify-between">
         <Logo size={32} />
         <div className="flex items-center gap-2">
-          <Link href="/profile" className="flex items-center gap-1.5 rounded-full border border-white/15 py-1 pl-1 pr-3 text-xs text-white"><Avatar url={me.avatar_url} name={me.handle} size={20} />@{me.handle}</Link>
+          <Link href="/profile" aria-label="Your profile"><Avatar url={me.avatar_url} name={me.handle} size={36} /></Link>
           <Link href="/kick" className="rounded-full border border-accent/50 px-3 py-1.5 text-xs font-semibold text-accent">KICK</Link>
           <NotificationBell userId={user.id} initial={unread ?? 0} />
         </div>
@@ -57,7 +65,9 @@ export default async function Home() {
           <Link href="/feed" className="flex items-center gap-1 text-xs text-accent">See all <ArrowRight size={12} /></Link>
         </div>
         <div className="mt-3 space-y-3">
-          {(calls ?? []).map((c) => <CallCard key={c.id} c={c} owner={names[c.user_id]} ownerAvatar={avatars[c.user_id]} />)}
+          {items.map((it) => it.type === "slip"
+            ? <SlipTicket key={`s${it.slip.id}`} slip={it.slip} legs={it.legs} owner={names[it.legs[0].user_id]} ownerAvatar={avatars[it.legs[0].user_id]} social={social} />
+            : <CallCard key={it.c.id} c={it.c} owner={names[it.c.user_id]} ownerAvatar={avatars[it.c.user_id]} social={social} />)}
           {!calls?.length && (
             <div className="rounded-2xl border border-dashed border-white/15 p-5 text-center text-sm text-white/55">
               {ids.length ? "The people you follow haven't posted a call yet." : "No calls yet. Make the first one."}
