@@ -15,6 +15,7 @@ import { loadSlips, loadSocial } from "@/lib/social/data";
 import { groupCalls } from "@/lib/social/group";
 import SlipTicket from "@/components/social/SlipTicket";
 import { kickBalance } from "@/lib/kick/balance";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { KickBalanceRow } from "@/components/kick/KickBalance";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +24,12 @@ export default async function Home() {
   const s = supabaseServer();
   const { data: { user } } = await s.auth.getUser();
   if (!user) redirect("/");
-  const { data: me } = await s.from("profiles").select("handle, avatar_url, caution_accepted_at, profile_completed_at, kick_address, sui_address").eq("id", user.id).single();
-  const kickAddress = me?.kick_address ?? me?.sui_address ?? null;
+  const { data: me } = await s.from("profiles").select("handle, avatar_url, caution_accepted_at, profile_completed_at").eq("id", user.id).single();
+  // If the profile cannot be read, show an error instead of redirecting: a redirect loop is what happened before.
+  if (!me) return (<main className="mx-auto min-h-dvh max-w-md px-5 pt-10"><p className="text-white">We could not load your profile. Please refresh.</p></main>);
+  // Wallet and KICK address columns are private to the browser client, so the server reads them with the admin client.
+  const { data: kp } = await supabaseAdmin().from("profiles").select("kick_address, sui_address").eq("id", user.id).maybeSingle();
+  const kickAddress = kp?.kick_address ?? kp?.sui_address ?? null;
   const kickUnits = kickAddress ? await kickBalance(kickAddress) : null;
   if (!me?.caution_accepted_at) redirect("/caution");
 
