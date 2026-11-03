@@ -8,6 +8,8 @@ import EditProfile from "@/components/EditProfile";
 import NotificationBell from "@/components/NotificationBell";
 import ProfileInfo from "@/components/profile/ProfileInfo";
 import { COUNTRIES } from "@/lib/countries";
+import { kickBalance } from "@/lib/kick/balance";
+import { KickBalanceCard } from "@/components/kick/KickBalance";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -37,6 +39,8 @@ export default async function Profile() {
   const graded = (picks ?? []).filter((x) => x.status === "won" || x.status === "lost");
   const winRate = graded.length ? graded.filter((x) => x.status === "won").length / graded.length : null;
   const country = COUNTRIES.find(([c]) => c === p?.country)?.[1] ?? null;
+  const kickAddress = p?.kick_address ?? p?.sui_address ?? null;
+  const kickUnits = kickAddress ? await kickBalance(kickAddress) : null;
   const isWalletOnly = user.email?.endsWith("@wallet.proofkick.app");
   const email = isWalletOnly ? null : user.email;
   const stats = [
@@ -82,6 +86,9 @@ export default async function Profile() {
           </div>))}
       </section>
 
+      <section className="mt-5">
+        <KickBalanceCard address={kickAddress} units={kickUnits} />
+      </section>
       <section className="mt-5">
         <ProfileInfo country={country} countryCode={p?.country ?? null} email={email} dob={p?.date_of_birth ?? null} />
         <div className="mt-3 flex items-center gap-3">

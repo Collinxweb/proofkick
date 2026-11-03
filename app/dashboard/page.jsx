@@ -14,6 +14,8 @@ import { CALL_COLS } from "@/lib/calls";
 import { loadSlips, loadSocial } from "@/lib/social/data";
 import { groupCalls } from "@/lib/social/group";
 import SlipTicket from "@/components/social/SlipTicket";
+import { kickBalance } from "@/lib/kick/balance";
+import { KickBalanceRow } from "@/components/kick/KickBalance";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,9 @@ export default async function Home() {
   const s = supabaseServer();
   const { data: { user } } = await s.auth.getUser();
   if (!user) redirect("/");
-  const { data: me } = await s.from("profiles").select("handle, avatar_url, caution_accepted_at, profile_completed_at").eq("id", user.id).single();
+  const { data: me } = await s.from("profiles").select("handle, avatar_url, caution_accepted_at, profile_completed_at, kick_address, sui_address").eq("id", user.id).single();
+  const kickAddress = me?.kick_address ?? me?.sui_address ?? null;
+  const kickUnits = kickAddress ? await kickBalance(kickAddress) : null;
   if (!me?.caution_accepted_at) redirect("/caution");
 
   const { data: follows } = await s.from("user_follows").select("followee_id").eq("follower_id", user.id);
@@ -51,6 +55,7 @@ export default async function Home() {
         </div>
       </header>
 
+      <div className="mt-4"><KickBalanceRow address={kickAddress} units={kickUnits} /></div>
       <section className="mt-7">
         <h1 className="text-[clamp(30px,9vw,40px)] font-semibold leading-[1.05] text-white">Your market.<br /><span className="text-accent">Your call.</span></h1>
         <p className="mt-3 text-sm text-white/55">Make calls people can verify. Kick testnet rounds with play money.</p>
