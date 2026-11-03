@@ -15,13 +15,13 @@ export default async function Feed() {
   if (!user) redirect("/");
   const { data: follows } = await s.from("user_follows").select("followee_id").eq("follower_id", user.id);
   const ids = (follows ?? []).map((f) => f.followee_id);
-  let calls = [], names = {};
+  let calls = [], names = {}, avatars = {};
   if (ids.length) {
     const [{ data: c }, { data: p }] = await Promise.all([
       s.from("picks").select(CALL_COLS).in("user_id", ids).order("locked_at", { ascending: false }).limit(50),
-      s.from("profiles").select("id, handle").in("id", ids),
+      s.from("profiles").select("id, handle, avatar_url").in("id", ids),
     ]);
-    calls = c ?? []; names = Object.fromEntries((p ?? []).map((x) => [x.id, x.handle]));
+    calls = c ?? []; names = Object.fromEntries((p ?? []).map((x) => [x.id, x.handle])); avatars = Object.fromEntries((p ?? []).map((x) => [x.id, x.avatar_url]));
   }
   const { data: notes } = await s.from("notifications").select("id, kind, payload, created_at, read_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(8);
   const unread = (notes ?? []).filter((n) => !n.read_at).length;
@@ -43,7 +43,7 @@ export default async function Feed() {
             </Link>))}
         </div>)}
       <div className="mt-5 space-y-3">
-        {calls.map((c) => <CallCard key={c.id} c={c} owner={names[c.user_id]} likes={likeInfo(c.id)} />)}
+        {calls.map((c) => <CallCard key={c.id} c={c} owner={names[c.user_id]} ownerAvatar={avatars[c.user_id]} likes={likeInfo(c.id)} />)}
         {!calls.length && (
           <div className="rounded-2xl border border-dashed border-white/15 p-6 text-center text-sm text-white/55">
             {ids.length ? "The people you follow haven't posted a call yet." : "You aren't following anyone yet."}

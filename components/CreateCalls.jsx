@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SlidersHorizontal, X } from "lucide-react";
 import { LEAGUES } from "@/lib/leagues";
 import SlipTray from "@/components/SlipTray";
+import { leagueFlag } from "@/lib/flags";
 
 const LABEL = { home: "Home Win", draw: "Draw", away: "Away Win" };
 const SHORT = { home: "1", draw: "X", away: "2" };
@@ -86,7 +87,7 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
       <div className="mt-4 space-y-3">
         {shown.map((f) => (
           <div key={f.id} className="rounded-2xl border border-white/10 bg-panel p-4">
-            <div className="flex justify-between text-[11px] text-white/50"><span>{lname[f.league] ?? f.league}</span>
+            <div className="flex justify-between text-[11px] text-white/50"><span>{leagueFlag(f.league)} {lname[f.league] ?? f.league}</span>
               <span>{new Date(f.kickoff_at).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span></div>
             <div className="mt-3 flex items-center justify-between gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-2"><Badge name={f.home_team} crest={f.hc} /><span className="truncate text-sm font-semibold text-white">{f.home_team}</span></div>

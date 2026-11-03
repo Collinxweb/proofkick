@@ -1,5 +1,6 @@
 import Link from "next/link";
 import RetryProof from "@/components/RetryProof";
+import Avatar from "@/components/Avatar";
 import LikeButton from "@/components/LikeButton";
 
 const LABEL = { home: "Home Win", draw: "Draw", away: "Away Win" };
@@ -7,17 +8,18 @@ const STATUS = { pending: ["Pending", "text-white/60 border-white/15"], won: ["W
 const when = (iso) => new Date(iso).toLocaleString("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
 
 // One prediction. `owner` shows the caller's name (feed); `mine` shows the retry button when proof is unfinished.
-export default function CallCard({ c, owner, mine, likes }) {
+export default function CallCard({ c, owner, ownerAvatar, mine, likes }) {
   const f = c.fixtures ?? {}, [st, cls] = STATUS[c.status] ?? STATUS.pending;
   const proofDone = c.memory_blob_id && c.anchor_digest;
   const clv = c.closing_odds ? Number(c.odds_taken) / Number(c.closing_odds) - 1 : null;
   return (
     <div className="rounded-2xl border border-white/10 bg-panel p-4">
       <div className="flex items-center justify-between text-[11px] text-white/50">
-        {owner ? <Link href={`/u/${owner}`} className="text-accent">@{owner}</Link> : <span>Locked {when(c.locked_at)}</span>}
+        {owner ? <Link href={`/u/${owner}`} className="flex items-center gap-1.5 text-accent"><Avatar url={ownerAvatar} name={owner} size={18} />@{owner}</Link> : <span>Locked {when(c.locked_at)}</span>}
         <span className={`rounded-full border px-2 py-0.5 ${cls}`}>{st}{c.final_home != null ? ` · ${c.final_home}-${c.final_away}` : ""}</span>
       </div>
       <p className="mt-2 font-semibold text-white">{f.home_team} vs {f.away_team}</p>
+      {c.source === "rule" && <p className="mt-1 inline-block rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">Strategy triggered{c.reasoning?.strategy ? `: ${c.reasoning.strategy}` : ""}</p>}
       <p className="text-sm text-white/70">{LABEL[c.selection]} at {Number(c.odds_taken).toFixed(2)}{clv != null ? ` · CLV ${clv >= 0 ? "+" : ""}${(clv * 100).toFixed(1)}%` : ""}</p>
       {owner && <p className="text-[11px] text-white/40">Locked {when(c.locked_at)} · kick-off {when(f.kickoff_at)}</p>}
       <div className="mt-3 flex items-center justify-between text-xs">

@@ -83,7 +83,7 @@ export default async function Profile() {
       </section>
 
       <section className="mt-5">
-        <ProfileInfo country={country} email={email} dob={p?.date_of_birth ?? null} />
+        <ProfileInfo country={country} countryCode={p?.country ?? null} email={email} dob={p?.date_of_birth ?? null} />
         <div className="mt-3 flex items-center gap-3">
           <EditProfile userId={user.id} initial={{ fullName: p?.full_name ?? "", dob: p?.date_of_birth ?? "", country: p?.country ?? "", avatar: p?.avatar_url ?? "" }}
             className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-accent px-5 py-3 text-sm font-semibold text-accent">

@@ -6,6 +6,8 @@ import BottomNav from "@/components/BottomNav";
 import CallCard from "@/components/CallCard";
 import ProfileGate from "@/components/ProfileGate";
 import LiveMarkets from "@/components/kick/LiveMarkets";
+import NotificationBell from "@/components/NotificationBell";
+import Avatar from "@/components/Avatar";
 import MarkRead from "@/components/MarkRead";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CALL_COLS } from "@/lib/calls";
@@ -16,7 +18,7 @@ export default async function Home() {
   const s = supabaseServer();
   const { data: { user } } = await s.auth.getUser();
   if (!user) redirect("/");
-  const { data: me } = await s.from("profiles").select("handle, caution_accepted_at, profile_completed_at").eq("id", user.id).single();
+  const { data: me } = await s.from("profiles").select("handle, avatar_url, caution_accepted_at, profile_completed_at").eq("id", user.id).single();
   if (!me?.caution_accepted_at) redirect("/caution");
 
   const { data: follows } = await s.from("user_follows").select("followee_id").eq("follower_id", user.id);
@@ -25,8 +27,9 @@ export default async function Home() {
   if (ids.length) q = q.in("user_id", ids);
   const { data: calls } = await q;
   const uids = [...new Set((calls ?? []).map((c) => c.user_id))];
-  const { data: profs } = uids.length ? await s.from("profiles").select("id, handle").in("id", uids) : { data: [] };
+  const { data: profs } = uids.length ? await s.from("profiles").select("id, handle, avatar_url").in("id", uids) : { data: [] };
   const names = Object.fromEntries((profs ?? []).map((p) => [p.id, p.handle]));
+  const avatars = Object.fromEntries((profs ?? []).map((p) => [p.id, p.avatar_url]));
   const { count: unread } = await s.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null);
 
   return (
@@ -34,8 +37,9 @@ export default async function Home() {
       <header className="flex items-center justify-between">
         <Logo size={32} />
         <div className="flex items-center gap-2">
-          <Link href="/profile" className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white">@{me.handle}</Link>
+          <Link href="/profile" className="flex items-center gap-1.5 rounded-full border border-white/15 py-1 pl-1 pr-3 text-xs text-white"><Avatar url={me.avatar_url} name={me.handle} size={20} />@{me.handle}</Link>
           <Link href="/kick" className="rounded-full border border-accent/50 px-3 py-1.5 text-xs font-semibold text-accent">KICK</Link>
+          <NotificationBell userId={user.id} initial={unread ?? 0} />
         </div>
       </header>
 
@@ -53,7 +57,7 @@ export default async function Home() {
           <Link href="/feed" className="flex items-center gap-1 text-xs text-accent">See all <ArrowRight size={12} /></Link>
         </div>
         <div className="mt-3 space-y-3">
-          {(calls ?? []).map((c) => <CallCard key={c.id} c={c} owner={names[c.user_id]} />)}
+          {(calls ?? []).map((c) => <CallCard key={c.id} c={c} owner={names[c.user_id]} ownerAvatar={avatars[c.user_id]} />)}
           {!calls?.length && (
             <div className="rounded-2xl border border-dashed border-white/15 p-5 text-center text-sm text-white/55">
               {ids.length ? "The people you follow haven't posted a call yet." : "No calls yet. Make the first one."}
