@@ -12,9 +12,10 @@ async function accept() {
 }
 
 const checks = [
-  "I am 18 years old or older. ProofKick is not for anyone under 18.",
-  "I understand ProofKick records predictions. It is not a betting service, takes no bets and handles no money.",
-  "I understand a good record shows discipline, not guaranteed results. Past calls do not predict future ones.",
+  "I am 18 years old or older. Kick Markets are for adults only.",
+  "Kick Markets are games of chance. They use play-money KICK on testnet, which has no real value, but a kick can still lose entirely and past rounds do not predict future ones.",
+  "ProofKick promises no return, profit or win rate. Calls and records show a track record, not a guaranteed result.",
+  "I will only kick what I can afford to lose in this game, and I will stop if it stops being fun.",
 ];
 
 export default async function Caution() {

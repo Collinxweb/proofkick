@@ -1,7 +1,7 @@
 import Legal from "@/components/Legal";
 export const metadata = { title: "Terms of Service | ProofKick" };
 const S = [
-["1. About ProofKick","ProofKick is a reputation layer for football predictions. Users post calls before kick-off, each call is timestamped and saved, and results are graded to build a public record. ProofKick is not a bookmaker or betting service, does not accept bets, and never holds, transfers or manages user money."],
+["1. About ProofKick","ProofKick is a reputation layer for football predictions. Users post calls before kick-off, each call is timestamped and saved, and results are graded to build a public record. Kick Markets are play-money games on testnet, where KICK has no real value. ProofKick is not a bookmaker, takes no real money, and never holds, transfers or manages real funds. Kick Markets are for adults (18+) only."],
 ["2. Eligibility (18+)","You must be at least 18 years old to use ProofKick. If you are under 18 you must not create an account. We may suspend accounts we reasonably believe belong to minors."],
 ["3. Predictions are opinions","Calls, hit rates, closing-line value and other statistics are for information and entertainment. They are not financial, investment or betting advice. Past performance does not predict future results. ProofKick does not promise that any caller or call will be right."],
 ["4. Your account","Keep your sign-in details secure. You are responsible for activity on your account. Provide accurate information and do not impersonate others or run multiple accounts to mislead other users about your record."],

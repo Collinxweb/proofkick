@@ -28,10 +28,13 @@ export default async function Kick() {
   return (
     <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-28 pt-5">
       <header className="flex items-center justify-between gap-2">
-        <Logo size={34} />
-        <div className="flex items-center gap-2">
-          {kickAddress && <span className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] text-white/70">{kickAddress.slice(0, 6)}…{kickAddress.slice(-4)}</span>}
-          <span className="rounded-full border border-accent/40 px-3 py-1.5 text-xs font-semibold text-white">{balance ?? "—"} <span className="text-white/60">KICK</span></span>
+        <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+          <img src="/logo.png" alt="" width={28} height={28} className="shrink-0" />
+          <span className="truncate text-lg font-bold text-white">Proof<span className="text-accent">Kick</span></span>
+        </Link>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {kickAddress && <span className="whitespace-nowrap rounded-full border border-white/15 px-2.5 py-1 text-[11px] text-white/70">{kickAddress.slice(0, 6)}…{kickAddress.slice(-4)}</span>}
+          <span className="whitespace-nowrap rounded-full border border-accent/40 px-2.5 py-1 text-[11px] font-semibold text-white">{balance ?? "—"} KICK</span>
         </div>
       </header>
 

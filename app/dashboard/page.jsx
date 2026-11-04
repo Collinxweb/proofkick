@@ -63,15 +63,15 @@ export default async function Home() {
   return (
     <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-5 pb-28 pt-5">
       <header className="flex items-center justify-between gap-2">
-        <Logo size={34} />
-        <div className="flex items-center gap-2">
-          <Link href="/profile" aria-label="Your profile"><Avatar url={me.avatar_url} name={me.handle} size={36} /></Link>
-          <Link href="/kick" className="flex items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1.5 text-xs font-semibold text-white">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-black">K</span>
-            {balance ?? "—"} <span className="text-white/60">KICK</span>
-          </Link>
+        <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+          <img src="/logo.png" alt="" width={28} height={28} className="shrink-0" />
+          <span className="truncate text-lg font-bold text-white">Proof<span className="text-accent">Kick</span></span>
+        </Link>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Link href="/profile" aria-label="Your profile"><Avatar url={me.avatar_url} name={me.handle} size={30} /></Link>
+          <Link href="/kick" className="whitespace-nowrap rounded-full border border-accent/40 px-2.5 py-1 text-[11px] font-semibold text-white">K {balance ?? "—"} KICK</Link>
           <NotificationBell userId={user.id} initial={unread ?? 0} />
-          <Link href="/settings" aria-label="Settings" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/80"><Settings size={16} /></Link>
+          <Link href="/settings" aria-label="Settings" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-white/80"><Settings size={15} /></Link>
         </div>
       </header>
 

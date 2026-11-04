@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { openRounds, retryOpenRecords, settleExpired } from "@/lib/kick/ops";
+import { openRounds, retryOpenRecords, settleExpired, planAt } from "@/lib/kick/ops";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +21,16 @@ export async function GET(req) {
     if (step === "all" || step === "open") {
       out.retried = await retryOpenRecords(db, deadline);
       out.opened = await openRounds(db, now, deadline);
+    }
+    if (step === "reset") {
+      // First call archives the open rounds (they still settle at expiry) and fixes the new start time.
+      // Re-run with the returned start to open the remaining rounds without archiving again.
+      const given = u.searchParams.get("start");
+      const start = given ? Number(given) : Math.floor(now / 60000) * 60000;
+      if (!given) await db.from("kick_rounds").update({ archived: true }).eq("archived", false).eq("state", "open");
+      out.start = start;
+      out.opened = await openRounds(db, now, deadline, planAt(start));
+      return NextResponse.json({ at: new Date(now).toISOString(), ...out });
     }
     if (step === "all" || step === "settle") out.settled = await settleExpired(db, now, deadline);
     return NextResponse.json({ at: new Date(now).toISOString(), ...out });

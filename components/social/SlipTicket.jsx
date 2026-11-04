@@ -2,6 +2,7 @@ import Link from "next/link";
 import Avatar from "@/components/Avatar";
 import LikeButton from "@/components/LikeButton";
 import CommentThread from "@/components/social/CommentThread";
+import ShareSlip from "@/components/social/ShareSlip";
 
 const LABEL = { home: "Home", draw: "Draw", away: "Away" };
 const STATUS = { pending: ["Pending", "text-white/60 border-white/15"], won: ["Won", "text-accent border-accent/50"], lost: ["Lost", "text-red-400 border-red-400/40"], void: ["Void", "text-white/60 border-white/15"] };
@@ -33,6 +34,7 @@ export default function SlipTicket({ slip, legs, owner, ownerAvatar, social }) {
       <div className="mt-3 flex items-center justify-end">
         <LikeButton pickId={anchor} count={likes?.count ?? 0} liked={likes?.liked ?? false} />
       </div>
+      <ShareSlip slipId={slip.id} text={`Multi · ${legs.length} legs · combined ${combined.toFixed(2)} on ProofKick`} />
       <CommentThread pickId={anchor} comments={social?.comments?.[anchor] ?? []} />
     </div>
   );

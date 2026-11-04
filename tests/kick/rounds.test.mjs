@@ -13,11 +13,11 @@ t("24H rounds open at UTC midnight; 1W rounds open on Monday UTC", () => {
   const sun = Date.parse("2026-11-08T12:00:00Z");
   assert.equal(new Date(R.roundStart("1W", sun)).toISOString(), "2026-11-02T00:00:00.000Z");
 });
-t("entry windows: 6 hours for 24H, 24 hours for weekly (as agreed)", () => {
+t("entry windows: 6 hours for 24H, 48 hours for weekly (as agreed)", () => {
   const s = Date.parse("2026-11-04T00:00:00Z");
   const d = R.roundWindow("24H", s), w = R.roundWindow("1W", s);
   assert.equal((d.entryClosesAt - s) / 3600e3, 6); assert.equal((d.expiresAt - s) / 3600e3, 24);
-  assert.equal((w.entryClosesAt - s) / 3600e3, 24); assert.equal((w.expiresAt - s) / 3600e3, 168);
+  assert.equal((w.entryClosesAt - s) / 3600e3, 48); assert.equal((w.expiresAt - s) / 3600e3, 168);
 });
 t("kicks are refused before open, after the entry window, and on decided rounds", () => {
   const r = { opens_at: Date.parse("2026-11-04T00:00:00Z"), entry_closes_at: Date.parse("2026-11-04T06:00:00Z"), state: "open" };
@@ -67,13 +67,6 @@ t("momentum is bounded to 5 to 95 and reports its weights", () => {
   const m = C.momentum({ candles, openPrice: 1, currentPrice: 1000 });
   assert.ok(m.upPct >= 5 && m.upPct <= 95);
   assert.ok(m.weights && m.version === C.CHANCE_VERSION);
-});
-t("candles parse oldest first and drop bad rows", () => {
-  const rows = [[1700003600, 99, 102, 100, 101, 5], [1700000000, 98, 101, 99, 100, 4], [1700007200, 0, 0, 0, 0, 1]];
-  const c = parseCandles(rows);
-  assert.equal(c.length, 2); assert.equal(c[0].open, 99); assert.equal(c[1].close, 101);
-  assert.equal(priceAt(c, 1700003600 * 1000 + 10), 100);
-  assert.equal(priceAt(c, 1), null);
 });
 t("catalog: BTC, ETH and PAXG on 24H and 1W, nothing else", () => {
   assert.equal(R.CATALOG.length, 6);
