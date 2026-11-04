@@ -15,8 +15,8 @@ export default function NotificationBell({ userId, initial }) {
     return () => { sb.removeChannel(ch); };
   }, [userId]);
   return (
-    <Link href="/notifications" aria-label="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80">
-      <Bell size={18} />
+    <Link href="/notifications" aria-label="Notifications" className="relative flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-white/80">
+      <Bell size={13} />
       {n > 0 && <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[18px] text-black">{n > 9 ? "9+" : n}</span>}
     </Link>
   );

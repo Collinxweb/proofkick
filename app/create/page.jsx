@@ -32,7 +32,7 @@ export default async function Create() {
       <h1 className="mt-6 text-3xl font-semibold text-white">Make your call</h1>
       <p className="mt-1 text-sm text-white/55">Tap a price to call a match. Your call is timestamped on Sui and saved to Walrus before kick-off. It can't be edited or deleted.</p>
       <CreateCalls fixtures={fixtures} called={Object.fromEntries((mine ?? []).map((p) => [p.fixture_id, p.selection]))} />
-      <ProfileGate open={!me.profile_completed_at} userId={user.id} />
+      {!me.profile_completed_at && <Link href="/settings" className="mb-4 block rounded-2xl border border-accent/50 bg-accent/10 p-4 text-sm text-white"><span className="font-semibold">Finish your profile first</span><span className="mt-1 block text-xs text-white/60">Name, date of birth, country and username. Tap to open Settings.</span></Link>}
       <BottomNav />
     </main>
   );

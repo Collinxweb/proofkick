@@ -2,13 +2,12 @@ import Link from "next/link";
 import Avatar from "@/components/Avatar";
 import LikeButton from "@/components/LikeButton";
 import CommentThread from "@/components/social/CommentThread";
-import ShareSlip from "@/components/social/ShareSlip";
+import Explain from "@/components/Explain";
 
 const LABEL = { home: "Home", draw: "Draw", away: "Away" };
 const STATUS = { pending: ["Pending", "text-white/60 border-white/15"], won: ["Won", "text-accent border-accent/50"], lost: ["Lost", "text-red-400 border-red-400/40"], void: ["Void", "text-white/60 border-white/15"] };
-const LEG = { pending: "pending", won: "won", lost: "lost", void: "void" };
 
-// One multi as one ticket: all legs, combined odds, the slip result and its stake (if any).
+// One multi as one ticket. Its Share link works exactly like a single call's: it opens the public page with the share buttons.
 export default function SlipTicket({ slip, legs, owner, ownerAvatar, social }) {
   const anchor = legs[0]?.id; // likes and comments on a multi attach to its first leg
   const combined = legs.reduce((p, l) => p * Number(l.odds_taken), 1);
@@ -20,21 +19,22 @@ export default function SlipTicket({ slip, legs, owner, ownerAvatar, social }) {
         {owner ? <Link href={`/u/${owner}`} className="flex items-center gap-1.5 text-accent"><Avatar url={ownerAvatar} name={owner} size={18} />@{owner}</Link> : <span>Multi</span>}
         <span className={`rounded-full border px-2 py-0.5 ${cls}`}>{st}</span>
       </div>
-      <p className="mt-2 text-sm font-semibold text-white">Multi · {legs.length} legs · combined odds {combined.toFixed(2)}</p>
+      <p className="mt-2 flex items-center gap-1 text-sm font-semibold text-white">Multi · {legs.length} legs · combined odds {combined.toFixed(2)} <Explain text="A multi is one ticket. Every leg must win for the multi to win. A leg that loses loses the whole multi. A void leg counts as odds 1.00." /></p>
       <div className="mt-2 space-y-1">
         {legs.map((l) => (
           <div key={l.id} className="flex items-center justify-between gap-2 text-xs">
             <span className="min-w-0 truncate text-white/80">{l.fixtures?.home_team} vs {l.fixtures?.away_team} · {LABEL[l.selection]}</span>
-            <span className="shrink-0 text-white/60">{Number(l.odds_taken).toFixed(2)} · {LEG[l.status] ?? l.status}</span>
+            <span className="shrink-0 text-white/60">{Number(l.odds_taken).toFixed(2)} · {l.status}</span>
           </div>))}
       </div>
-      <p className="mt-2 text-[11px] text-white/45">
+      <p className="mt-2 flex items-center gap-1 text-[11px] text-white/45">
         {slip.stake ? `Stake ${slip.stake}${slip.status === "pending" ? " · pending" : slip.grossPayout != null ? ` · returns ${slip.grossPayout}` : ""}` : "Recorded, no stake"}
+        {!slip.stake && <Explain text="Recorded means the call is logged on the record with no money attached. Stake is optional." />}
       </p>
-      <div className="mt-3 flex items-center justify-end">
+      <div className="mt-3 flex items-center justify-between">
+        <Link href={`/t/${slip.id}`} className="text-xs text-white/60 underline">Share</Link>
         <LikeButton pickId={anchor} count={likes?.count ?? 0} liked={likes?.liked ?? false} />
       </div>
-      <ShareSlip slipId={slip.id} text={`Multi · ${legs.length} legs · combined ${combined.toFixed(2)} on ProofKick`} />
       <CommentThread pickId={anchor} comments={social?.comments?.[anchor] ?? []} />
     </div>
   );

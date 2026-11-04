@@ -2,13 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import Logo from "@/components/Logo";
-import ShareSlip from "@/components/social/ShareSlip";
+import ShareCard from "@/components/ShareCard";
 
 export const revalidate = 60;
 const LABEL = { home: "Home", draw: "Draw", away: "Away" };
+const site = () => process.env.NEXT_PUBLIC_SITE_URL ?? "https://proofkick-one.vercel.app";
 const anon = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 
-// Public page for one multi ticket: every leg, the combined odds and the slip result.
+// Public page for one multi ticket, shared the same way as a single call.
 export default async function Ticket({ params }) {
   const sb = anon();
   const { data: slip } = await sb.from("slips").select("id, kind, stake, status, gross_payout").eq("id", params.id).maybeSingle();
@@ -37,8 +38,7 @@ export default async function Ticket({ params }) {
         <p className="mt-2 text-[11px] text-white/45">{slip.stake ? `Stake ${slip.stake}` : "Recorded, no stake"}</p>
         <p className="mt-3 text-[11px] leading-relaxed text-white/40">Each leg was locked before kick-off and is graded from the match data. A losing leg loses the multi.</p>
       </div>
-      <p className="mt-4 text-center text-[11px] text-white/50">Shared from ProofKick</p>
-      <div className="mt-2"><ShareSlip slipId={slip.id} text={text} /></div>
+      <div className="mt-4"><ShareCard pageUrl={`${site()}/t/${slip.id}`} text={text} /></div>
     </main>
   );
 }

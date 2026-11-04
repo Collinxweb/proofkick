@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PAIR, ICON, pct, fmtPrice } from "@/components/kick/market-style";
 import Countdown from "@/components/kick/Countdown";
+import Explain from "@/components/Explain";
 
 // One 24H market. GREEN and RED stake KICK on the price closing up or down. Kicks are signed by the account, gas paid by the app.
 export default function RoundCard({ r, canKick }) {
@@ -54,7 +55,7 @@ export default function RoundCard({ r, canKick }) {
           <span>GREEN {r.impliedLong ?? 50}% · {fmtPrice(r.long)} KICK</span>
           <span>RED {r.impliedShort ?? 50}% · {fmtPrice(r.short)} KICK</span>
         </div>
-        <p className="mt-1 text-[10px] text-white/40">Momentum reading: {r.momentumUp != null ? `${r.momentumUp}% up` : "not available"}. An indicator, not a forecast.</p>
+        <p className="mt-1 flex items-center gap-1 text-[10px] text-white/40"><Explain text="Implied chance is the share of KICK staked on each side, which is the pool's view of the odds. The momentum reading is a simple indicator from recent prices. It is not a forecast." />Momentum reading: {r.momentumUp != null ? `${r.momentumUp}% up` : "not available"}. An indicator, not a forecast.</p>
       </div>
 
       {open && canKick && (

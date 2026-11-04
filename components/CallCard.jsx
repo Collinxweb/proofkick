@@ -3,6 +3,7 @@ import RetryProof from "@/components/RetryProof";
 import LikeButton from "@/components/LikeButton";
 import CommentThread from "@/components/social/CommentThread";
 import Avatar from "@/components/Avatar";
+import Explain from "@/components/Explain";
 
 const LABEL = { home: "Home Win", draw: "Draw", away: "Away Win" };
 const STATUS = { pending: ["Pending", "text-white/60 border-white/15"], won: ["Won", "text-accent border-accent/50"], lost: ["Lost", "text-red-400 border-red-400/40"], void: ["Void", "text-white/60 border-white/15"] };
@@ -26,7 +27,7 @@ export default function CallCard({ c, owner, ownerAvatar, mine, social }) {
       {owner && <p className="text-[11px] text-white/40">Locked {when(c.locked_at)} · kick-off {when(f.kickoff_at)}</p>}
       <div className="mt-3 flex items-center justify-between text-xs">
         {c.anchor_digest ? <a className="text-accent underline" href={`https://suiscan.xyz/mainnet/tx/${c.anchor_digest}`} target="_blank" rel="noreferrer">Sui tx {c.anchor_digest.slice(0, 8)}…</a>
-          : mine ? <RetryProof pickId={c.id} /> : <span className="text-white/40">Proof pending</span>}
+          : mine ? <RetryProof pickId={c.id} /> : <span className="flex items-center gap-1 text-white/40">Proof pending<Explain text="Proof pending means the call is still being saved to Walrus and stamped on Sui. It can be retried from My calls." /></span>}
         <span className="flex items-center gap-3">
           <LikeButton pickId={c.id} count={likes?.count ?? 0} liked={likes?.liked ?? false} />
           <Link href={`/p/${c.id}`} className="text-white/60 underline">Share</Link>
