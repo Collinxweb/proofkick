@@ -41,7 +41,7 @@ export default async function Kick() {
           <span className="whitespace-nowrap text-base font-bold text-white">Proof<span className="text-accent">Kick</span></span>
         </Link>
         <div className="flex shrink-0 items-center gap-1">
-          <span className="whitespace-nowrap rounded-full border border-accent/40 px-2 py-0.5 text-[10px] font-semibold text-white">K {balance ?? "—"} KICK</span>
+          <span className="whitespace-nowrap rounded-full border border-accent/40 px-2 py-0.5 text-[10px] font-semibold text-white">{balance ?? "—"} KICK</span>
         </div>
       </header>
 

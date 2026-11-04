@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import fs from "node:fs";
 import path from "node:path";
 import SlipCard from "@/lib/card/SlipCard";
-import { demoSlip, loadPickSlip } from "@/lib/card/load";
+import { demoSlip, loadPickSlip, loadSlipCard } from "@/lib/card/load";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,15 +15,16 @@ async function dataUri(url) {
   } catch { return null; }
 }
 
-// /api/card/demo  |  /api/card/pick-<pickId>   ->  1080x1350 PNG share card
+// /api/card/demo  |  /api/card/pick-<pickId>  |  /api/card/slip-<slipId>  ->  1080x1350 PNG share card
 export async function GET(req, { params }) {
   const code = params.code;
-  const slip = code === "demo" ? demoSlip() : code.startsWith("pick-") ? await loadPickSlip(code.slice(5)) : null;
+  const slip = code === "demo" ? demoSlip()
+    : code.startsWith("pick-") ? await loadPickSlip(code.slice(5))
+    : code.startsWith("slip-") ? await loadSlipCard(code.slice(5))
+    : null;
   if (!slip) return new Response("Not found", { status: 404 });
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
-  // No QR package needed: a public QR image service renders it, and the card falls back to the plain link if it is down.
-  const target = slip.pickId ? `${site}/p/${slip.pickId}` : site;
-  slip.link = target.replace(/^https?:\/\//, "");
+  const target = slip.pickId ? `${site}/p/${slip.pickId}` : slip.slipId ? `${site}/t/${slip.slipId}` : site;
   const qr = await dataUri(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&format=png&data=${encodeURIComponent(target)}`);
   let logo = null;
   try { logo = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public", "logo.png")).toString("base64")}`; } catch {}

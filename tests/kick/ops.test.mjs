@@ -9,10 +9,12 @@ t("the plan covers every catalog round with the agreed windows", () => {
   assert.equal((btc24.entryClosesAt - btc24.start) / 3600e3, 6);
   assert.equal((btc24.expiresAt - btc24.start) / 3600e3, 24);
 });
-t("weekly rounds keep one id all week (idempotent)", () => {
-  const a = planFor(Date.parse("2026-11-03T10:00:00Z")).find((p) => p.horizon === "1W" && p.asset === "BTC");
-  const b = planFor(Date.parse("2026-11-07T10:00:00Z")).find((p) => p.horizon === "1W" && p.asset === "BTC");
-  assert.equal(a.id, b.id);
+t("weekly rounds open now and their entry window is 48 hours", () => {
+  const now = Date.parse("2026-11-04T10:00:30Z");
+  const w = planFor(now).find((p) => p.horizon === "1W" && p.asset === "BTC");
+  assert.equal(w.start, Date.parse("2026-11-04T10:00:00Z"));
+  assert.equal((w.entryClosesAt - w.start) / 3600e3, 48);
+  assert.equal((w.expiresAt - w.start) / 3600e3, 168);
 });
 t("closing price is the last candle that closed before expiry", () => {
   const candles = [{ t: 0, close: 10 }, { t: 3600e3, close: 11 }, { t: 7200e3, close: 12 }];

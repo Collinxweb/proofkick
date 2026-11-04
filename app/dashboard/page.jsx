@@ -74,7 +74,7 @@ export default async function Home() {
         </Link>
         <div className="flex shrink-0 items-center gap-1">
           <Link href="/profile" aria-label="Your profile"><Avatar url={me.avatar_url} name={me.handle} size={26} /></Link>
-          <Link href="/kick" className="whitespace-nowrap rounded-full border border-accent/40 px-2 py-0.5 text-[10px] font-semibold text-white">K {balance ?? "—"} KICK</Link>
+          <Link href="/kick" className="whitespace-nowrap rounded-full border border-accent/40 px-2 py-0.5 text-[10px] font-semibold text-white">{balance ?? "—"} KICK</Link>
           <NotificationBell userId={user.id} initial={unread ?? 0} />
           <Link href="/settings" aria-label="Settings" className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-white/80"><Settings size={13} /></Link>
         </div>
