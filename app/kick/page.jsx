@@ -51,7 +51,7 @@ export default async function Kick() {
       </section>
 
       <section className="mt-4">
-        <div className="mb-3 flex items-center gap-1 text-base font-semibold text-white">Rounds <Explain text="A round opens at its start time, takes kicks until entries close, and settles at expiry from the price. 24H rounds take entries for 6 hours. Weekly rounds take entries for 48 hours." /></div>
+        <div className="mb-3 flex items-center gap-1 text-base font-semibold text-white">Rounds <Explain text="24H rounds open at 12:00 UTC, take entries until 18:00 UTC, and settle 24 hours after opening from the price. Weekly rounds take entries until the last 24 hours before they close." /></div>
         <MarketsList rounds={rounds} canKick={Boolean(kickAddress)} />
         {!user && <p className="mt-3 text-xs text-white/50"><Link href="/" className="text-accent underline">Sign in</Link> to kick.</p>}
         {user && !kickAddress && <p className="mt-3 text-xs text-white/50">Get testnet KICK first, then you can kick. <Link href="/kick/claim" className="text-accent underline">Get testnet KICK</Link></p>}

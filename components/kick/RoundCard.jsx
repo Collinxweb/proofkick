@@ -43,6 +43,7 @@ export default function RoundCard({ r, canKick }) {
           <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${open ? "border-accent/50 text-accent" : "border-white/20 text-white/50"}`}>{open ? "● OPEN" : r.state === "open" ? "CLOSED" : r.state.toUpperCase()}</span>
           {open && <p className="mt-2 text-[10px] text-white/50">Entries close in</p>}
           {open && <p className="text-sm font-semibold text-white"><Countdown toMs={r.entryMs} /></p>}
+          {r.state === "open" && <p className="mt-1 text-[10px] text-white/50">Round closes in <Countdown toMs={r.expiresMs} /></p>}
         </div>
       </div>
 

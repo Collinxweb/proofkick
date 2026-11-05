@@ -6,18 +6,19 @@ let n = 0; const t = (name, f) => { f(); n++; console.log("ok", name); };
 
 t("24H rounds open at UTC midnight; 1W rounds open on Monday UTC", () => {
   const wed = Date.parse("2026-11-04T15:20:00Z");
-  assert.equal(new Date(R.roundStart("24H", wed)).toISOString(), "2026-11-04T00:00:00.000Z");
+  assert.equal(new Date(R.roundStart("24H", wed)).toISOString(), "2026-11-04T12:00:00.000Z");
+  assert.equal(new Date(R.roundStart("24H", Date.parse("2026-11-04T10:00:00Z"))).toISOString(), "2026-11-03T12:00:00.000Z");
   assert.equal(new Date(R.roundStart("1W", wed)).toISOString(), "2026-11-02T00:00:00.000Z"); // Monday
   const mon = Date.parse("2026-11-02T00:00:00Z");
   assert.equal(new Date(R.roundStart("1W", mon)).toISOString(), "2026-11-02T00:00:00.000Z");
   const sun = Date.parse("2026-11-08T12:00:00Z");
   assert.equal(new Date(R.roundStart("1W", sun)).toISOString(), "2026-11-02T00:00:00.000Z");
 });
-t("entry windows: 6 hours for 24H, 48 hours for weekly (as agreed)", () => {
+t("entry windows: 6 hours for 24H, until the last 24 hours for weekly", () => {
   const s = Date.parse("2026-11-04T00:00:00Z");
   const d = R.roundWindow("24H", s), w = R.roundWindow("1W", s);
   assert.equal((d.entryClosesAt - s) / 3600e3, 6); assert.equal((d.expiresAt - s) / 3600e3, 24);
-  assert.equal((w.entryClosesAt - s) / 3600e3, 48); assert.equal((w.expiresAt - s) / 3600e3, 168);
+  assert.equal((w.entryClosesAt - s) / 3600e3, 144); assert.equal((w.expiresAt - s) / 3600e3, 168);
 });
 t("kicks are refused before open, after the entry window, and on decided rounds", () => {
   const r = { opens_at: Date.parse("2026-11-04T00:00:00Z"), entry_closes_at: Date.parse("2026-11-04T06:00:00Z"), state: "open" };
