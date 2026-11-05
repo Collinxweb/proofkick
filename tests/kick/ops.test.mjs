@@ -4,7 +4,7 @@ let n = 0; const t = (name, f) => { f(); n++; console.log("ok", name); };
 t("the plan covers every catalog round with the agreed windows", () => {
   const plan = planFor(Date.parse("2026-11-04T10:00:00Z"));
   assert.equal(plan.length, 6);
-  const btc24 = plan.find((p) => p.id === "BTC-24H-2026-11-03");
+  const btc24 = plan.find((p) => p.id === "BTC-24H-2026-11-03-1200");
   assert.equal(new Date(btc24.start).toISOString(), "2026-11-03T12:00:00.000Z");
   assert.equal((btc24.entryClosesAt - btc24.start) / 3600e3, 6);
   assert.equal((btc24.expiresAt - btc24.start) / 3600e3, 24);
