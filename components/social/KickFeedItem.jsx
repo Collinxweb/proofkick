@@ -15,6 +15,7 @@ export default function KickFeedItem({ k }) {
       </div>
       <p className="mt-2 text-sm font-semibold text-white">Kicked {fmt(k.stake)} KICK {SIDE[k.side]} on {k.asset} {k.horizon}</p>
       <p className="mt-1 text-[11px] text-white/50">{status}{k.payout != null && k.status !== "open" ? ` · paid ${fmt(k.payout)} KICK` : ""} · play money, no real value</p>
+      {k.id && <Link href={`/k/${k.id}`} className="mt-2 inline-block text-xs text-white/60 underline">Share</Link>}
     </div>
   );
 }

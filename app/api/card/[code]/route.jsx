@@ -3,6 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import SlipCard from "@/lib/card/SlipCard";
 import { demoSlip, loadPickSlip, loadSlipCard } from "@/lib/card/load";
+import { loadKickCard } from "@/lib/card/kick-load";
+import KickCard from "@/lib/card/KickCard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +20,14 @@ async function dataUri(url) {
 // /api/card/demo  |  /api/card/pick-<pickId>  |  /api/card/slip-<slipId>  ->  1080x1350 PNG share card
 export async function GET(req, { params }) {
   const code = params.code;
+  if (code.startsWith("kick-")) {
+    const k = await loadKickCard(code.slice(5));
+    if (!k) return new Response("Not found", { status: 404 });
+    const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+    const qr = await dataUri(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&format=png&data=${encodeURIComponent(`${site}/k/${k.entryId}`)}`);
+    const avatar = k.avatarUrl?.startsWith("http") ? await dataUri(k.avatarUrl) : null;
+    return new ImageResponse(<KickCard k={k} avatar={avatar} qr={qr} />, { width: 1024, height: 700 });
+  }
   const slip = code === "demo" ? demoSlip()
     : code.startsWith("pick-") ? await loadPickSlip(code.slice(5))
     : code.startsWith("slip-") ? await loadSlipCard(code.slice(5))
