@@ -6,8 +6,32 @@ import { competitionTeams, bestTeam } from "@/lib/crests";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const slug = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const CACHED = "/object/public/crests/";
+const DAY = 864e5;
+
+// Team lists per competition: saved for a day, and fetched one at a time with a gap (football-data.org returns 429 to bursts).
+async function loadLists(db, token) {
+  const { data: saved } = await db.from("competition_teams").select("code, teams, fetched_at");
+  const fresh = new Map((saved ?? []).filter((r) => Date.now() - Date.parse(r.fetched_at) < DAY).map((r) => [r.code, r.teams]));
+  const lists = [], report = {};
+  let fetchedOne = false;
+  for (const code of Object.values(LEAGUE_TO_FD)) {
+    if (fresh.has(code)) { lists.push(...fresh.get(code)); report[code] = `saved (${fresh.get(code).length})`; continue; }
+    if (fetchedOne) await sleep(6500);
+    fetchedOne = true;
+    try {
+      const teams = await competitionTeams(code, token);
+      lists.push(...teams);
+      report[code] = teams.length;
+      await db.from("competition_teams").upsert({ code, teams, fetched_at: new Date().toISOString() });
+    } catch (e) {
+      report[code] = String(e.message ?? e).slice(0, 80);
+    }
+  }
+  return { lists, report };
+}
 
 // Matches each club playing in the next week to its football-data.org team and caches the crest in storage.
 // Clubs already cached, or corrected by hand, are skipped, so repeated runs finish the list.
@@ -27,14 +51,9 @@ export async function GET(req) {
   const report = { clubs: names.length, alreadyDone: done.size, remaining: todo.length, byCompetition: {}, cached: 0, linkOnly: 0, unmatched: [], notes: [] };
   if (!todo.length) return NextResponse.json({ ...report, notes: ["all clubs are done"] });
 
-  // Six competition lists at once: well inside the free limit of 10 requests a minute.
-  const lists = [];
-  await Promise.all(Object.values(LEAGUE_TO_FD).map(async (code) => {
-    try { const teams = await competitionTeams(code, token); lists.push(...teams); report.byCompetition[code] = teams.length; }
-    catch (e) { report.byCompetition[code] = String(e.message ?? e).slice(0, 80); }
-  }));
+  const { lists, report: listReport } = await loadLists(db, token);
+  report.byCompetition = listReport;
 
-  // Clubs in parallel batches of 8, stopping before the time limit.
   for (let i = 0; i < todo.length; i += 8) {
     if (Date.now() > deadline) { report.notes.push(`time budget used; re-run to finish (${todo.length - i} left)`); break; }
     await Promise.all(todo.slice(i, i + 8).map(async (name) => {
