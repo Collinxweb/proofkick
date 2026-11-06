@@ -93,6 +93,16 @@ public fun settle_slip<T>(_: &AdminCap, slip: &mut Slip<T>, outcome: u8, payout:
     transfer::public_transfer(coin::from_balance(house, ctx), ctx.sender());
 }
 
+// Payout for a stake at combined odds given in hundredths (2.38 = 238). Example: 1000 at 238 pays 2380.
+public fun payout_for(stake: u64, odds_hundredths: u64): u64 {
+    stake * odds_hundredths / 100
+}
+
+// What the house must add to a win: the payout above the escrowed stake. Example: 2380 - 1000 = 1380.
+public fun house_topup(stake: u64, payout: u64): u64 {
+    if (payout > stake) { payout - stake } else { 0 }
+}
+
 // The owner withdraws the payout once.
 public fun claim<T>(slip: &mut Slip<T>, ctx: &mut TxContext) {
     assert!(slip.state != PENDING, EWrongState);

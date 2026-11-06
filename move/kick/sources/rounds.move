@@ -8,7 +8,7 @@
 // - The admin cannot take money out: redeem only ever pays a holder's own stake, pro rata.
 module kick::rounds;
 
-use kick::kick_token::KICK_TOKEN;
+use kick::kick_token::{Self, Faucet, KICK_TOKEN};
 use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
@@ -235,4 +235,11 @@ fun add_stake(stakes: &mut Table<address, u64>, who: address, amount: u64) {
 
 fun take_stake(stakes: &mut Table<address, u64>, who: address): u64 {
     if (stakes.contains(who)) stakes.remove(who) else 0
+}
+
+
+// The house mints a settlement top-up for a football multi (or any settlement that needs funds above the stake).
+// Only the holder of the AdminCap can call this.
+public fun mint_house(_: &AdminCap, faucet: &mut Faucet, amount: u64, ctx: &mut TxContext): Coin<KICK_TOKEN> {
+    kick_token::mint_for_house(faucet, amount, ctx)
 }

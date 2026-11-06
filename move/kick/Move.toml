@@ -1,6 +1,7 @@
 [package]
 name = "kick"
 edition = "2024"
+published-at = "0xd891a7530adc1b6c88c7ac1d9f783ddb36d73168ea75baf96b7c6c64d81e70e0"
 
 [addresses]
-kick = "0x0"
+kick = "0xd891a7530adc1b6c88c7ac1d9f783ddb36d73168ea75baf96b7c6c64d81e70e0"

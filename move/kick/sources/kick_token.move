@@ -48,3 +48,9 @@ public fun claim(faucet: &mut Faucet, ctx: &mut TxContext) {
 public fun has_claimed(faucet: &Faucet, who: address): bool {
     faucet.claimed.contains(who)
 }
+
+// Minting for settlement (package-internal). Called only through an AdminCap check in the rounds module.
+// The house mints exactly the amount a win needs above the stake, so no bankroll is held idle.
+public(package) fun mint_for_house(faucet: &mut Faucet, amount: u64, ctx: &mut TxContext): sui::coin::Coin<KICK_TOKEN> {
+    coin::mint(&mut faucet.cap, amount, ctx)
+}
