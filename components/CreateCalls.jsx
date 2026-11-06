@@ -5,6 +5,7 @@ import { SlidersHorizontal, X } from "lucide-react";
 import { LEAGUES } from "@/lib/leagues";
 import SlipTray from "@/components/SlipTray";
 import { leagueFlag } from "@/lib/flags";
+import RecallNote from "@/components/RecallNote";
 
 const LABEL = { home: "Home Win", draw: "Draw", away: "Away Win" };
 const SHORT = { home: "1", draw: "X", away: "2" };
@@ -117,6 +118,7 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
             <div className="rounded-xl bg-black/30 p-3"><p className="text-xs text-white/50">Your call</p>
               <p className="text-lg font-semibold text-white">{LABEL[sheet.sel]} <span className="text-accent">@ {sheet.fx.odds[sheet.sel]}</span></p>
               <p className="mt-1 text-[11px] text-white/40">Odds are the average across European bookmakers when you post. The same source sets the closing line, so your edge is measured fairly.</p></div>
+            {sheet && <RecallNote fixtureId={sheet.fx.id} homeTeam={sheet.fx.home_team} awayTeam={sheet.fx.away_team} selection={sheet.sel} />}
             {!steps.length && <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder="Why? (optional)" className="h-20 w-full resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none focus:border-accent" />}
             {steps.map((x, i) => <p key={i} className="text-sm text-white/70">{x}</p>)}
             {done && (
