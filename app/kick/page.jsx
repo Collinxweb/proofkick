@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
+import ContactSupport from "@/components/support/ContactSupport";
 import MarketsList from "@/components/kick/MarketsList";
 import RedeemButton from "@/components/kick/RedeemButton";
 import Competition from "@/components/kick/Competition";
@@ -79,6 +80,7 @@ export default async function Kick() {
       )}
 
       <p className="mt-6 rounded-2xl border border-white/10 bg-panel px-4 py-3 text-xs text-white/60">Testnet · KICK has no real value · 18+ only</p>
+      <div className="mt-6"><ContactSupport /></div>
       <BottomNav />
     </main>
   );

@@ -95,7 +95,9 @@ export default function CreateCalls({ fixtures, called: initialCalled }) {
               <span className="text-xs text-white/30">vs</span>
               <div className="flex min-w-0 flex-1 items-center justify-end gap-2"><span className="truncate text-right text-sm font-semibold text-white">{f.away_team}</span><Badge name={f.away_team} crest={f.ac} /></div>
             </div>
-            {called[f.id] ? (
+            {slip.some((x) => x.fixtureId === f.id) ? (
+              <p className="mt-3 rounded-xl bg-accent/10 py-2 text-center text-sm text-accent">In your multi: {LABEL[slip.find((x) => x.fixtureId === f.id).selection]} @ {Number(slip.find((x) => x.fixtureId === f.id).odds).toFixed(2)}</p>
+            ) : called[f.id] ? (
               <p className="mt-3 rounded-xl bg-accent/10 py-2 text-center text-sm text-accent">You called: {LABEL[called[f.id]]}</p>
             ) : (
               <div className="mt-3 grid grid-cols-3 gap-2">

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import fs from "node:fs";
 import path from "node:path";
 import SlipCard from "@/lib/card/SlipCard";
-import { demoSlip, loadPickSlip, loadSlipCard } from "@/lib/card/load";
+import { demoSlip, loadPickSlip, loadSlipCard, attachCrests } from "@/lib/card/load";
 import { loadKickCard } from "@/lib/card/kick-load";
 import KickCard from "@/lib/card/KickCard";
 
@@ -33,6 +33,8 @@ export async function GET(req, { params }) {
     : code.startsWith("slip-") ? await loadSlipCard(code.slice(5))
     : null;
   if (!slip) return new Response("Not found", { status: 404 });
+  await attachCrests(slip);
+  for (const s of slip.selections ?? []) s.crestData = s.crest ? await dataUri(s.crest) : null;
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
   const target = slip.pickId ? `${site}/p/${slip.pickId}` : slip.slipId ? `${site}/t/${slip.slipId}` : site;
   const qr = await dataUri(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&format=png&data=${encodeURIComponent(target)}`);

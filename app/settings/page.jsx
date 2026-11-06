@@ -4,6 +4,7 @@ import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
 import AccountForm from "@/components/settings/AccountForm";
 import ThemeToggle from "@/components/ThemeToggle";
+import ContactSupport from "@/components/support/ContactSupport";
 import ExportButtons from "@/components/settings/ExportButtons";
 import FeedbackForm from "@/components/settings/FeedbackForm";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -25,6 +26,7 @@ export default async function Settings({ searchParams }) {
       <div className="mt-6"><ThemeToggle /></div>
       <div className="mt-6"><ExportButtons /></div>
       <div className="mt-6"><FeedbackForm /></div>
+      <div className="mt-6"><ContactSupport /></div>
       <BottomNav />
     </main>
   );

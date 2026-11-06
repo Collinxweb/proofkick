@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Settings, Plus, ArrowRight, Trophy } from "lucide-react";
 import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
+import ContactSupport from "@/components/support/ContactSupport";
 import CallCard from "@/components/CallCard";
 import SlipTicket from "@/components/social/SlipTicket";
 import KickFeedItem from "@/components/social/KickFeedItem";
@@ -137,6 +138,7 @@ export default async function Home() {
           <span className="mt-1 block text-xs text-white/60">Add your name, date of birth, country and username to start making calls. Tap to open Settings.</span>
         </Link>
       )}
+      <div className="mt-6"><ContactSupport /></div>
       <BottomNav />
     </main>
   );
