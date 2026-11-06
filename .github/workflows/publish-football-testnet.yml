@@ -1,0 +1,38 @@
+name: Publish football escrow (testnet)
+on: workflow_dispatch
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Sui CLI
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/MystenLabs/suiup/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/suiup" install sui@testnet -y
+      - name: Publish to testnet
+        env:
+          KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
+          EXPECTED_ADDRESS: "0x745c455dbb94ea713c13c8d3cf9c7c6b80cf7a78eb86c710a378087297657f97"
+        run: |
+          set -euo pipefail
+          if [ -z "${KICK_DEPLOYER_KEY:-}" ]; then echo "STOPPED: KICK_DEPLOYER_KEY is missing or empty."; exit 1; fi
+          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
+          printf 'y\nhttps://fullnode.testnet.sui.io:443\nkick-testnet\n0\n' | sui client envs >/dev/null 2>&1 || true
+          sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
+          sui client switch --env kick-testnet >/dev/null
+          sui client switch --address "$EXPECTED_ADDRESS" >/dev/null
+          ACTIVE=$(sui client active-address | tr -d '[:space:]')
+          if [ "$ACTIVE" != "$EXPECTED_ADDRESS" ]; then echo "STOPPED: active address is $ACTIVE"; exit 1; fi
+          cd move/football_escrow
+          set +e
+          sui client publish --gas-budget 200000000 --json > out.txt 2>&1
+          PSTATUS=$?
+          set -e
+          if [ "$PSTATUS" -ne 0 ]; then sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' out.txt | tail -n 60; echo "STOPPED: publish failed"; exit 1; fi
+          sed -n '/^{/,$p' out.txt > pub.json
+          PKG=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' pub.json)
+          ADMIN=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::slips::AdminCap")) | .objectId' pub.json)
+          echo "FOOTBALL_ESCROW_PACKAGE_ID=$PKG"
+          echo "FOOTBALL_ESCROW_ADMIN_CAP_ID=$ADMIN"
+          { echo "### Football escrow (testnet)"; echo "- Package: \`$PKG\`"; echo "- AdminCap: \`$ADMIN\`"; } >> "$GITHUB_STEP_SUMMARY"

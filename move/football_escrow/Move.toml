@@ -1,0 +1,6 @@
+[package]
+name = "football_escrow"
+edition = "2024"
+
+[addresses]
+football_escrow = "0x0"
