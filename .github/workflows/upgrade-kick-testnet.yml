@@ -1,5 +1,10 @@
 name: Upgrade Kick package (testnet)
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      upgrade_cap:
+        description: "Optional: the UpgradeCap object ID for 0x745c…7f97 (leave empty to search)"
+        required: false
 jobs:
   upgrade:
     runs-on: ubuntu-latest
@@ -14,6 +19,7 @@ jobs:
         env:
           KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
           EXPECTED_ADDRESS: "0x745c455dbb94ea713c13c8d3cf9c7c6b80cf7a78eb86c710a378087297657f97"
+          INPUT_CAP: ${{ inputs.upgrade_cap }}
         run: |
           set -euo pipefail
           if [ -z "${KICK_DEPLOYER_KEY:-}" ]; then echo "STOPPED: KICK_DEPLOYER_KEY is missing or empty."; exit 1; fi
@@ -22,9 +28,23 @@ jobs:
           sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
           sui client switch --env kick-testnet >/dev/null
           sui client switch --address "$EXPECTED_ADDRESS" >/dev/null
-          CAP=$(sui client objects "$EXPECTED_ADDRESS" --json | jq -r '[.. | objects | select((.type? // .data.type? // "") | endswith("::package::UpgradeCap"))] | .[0] | (.objectId? // .data.objectId? // empty)')
-          if [ -z "$CAP" ]; then echo "STOPPED: no UpgradeCap found for $EXPECTED_ADDRESS"; exit 1; fi
+
+          # 1. Use the ID given in the input, if there is one.
+          CAP="$INPUT_CAP"
+          # 2. Otherwise search the wallet's objects for the UpgradeCap, whatever the CLI's JSON layout.
+          if [ -z "$CAP" ]; then
+            sui client objects "$EXPECTED_ADDRESS" --json > objs.json 2>/dev/null || true
+            CAP=$(jq -r '.. | objects | select(((.objectType? // .type? // .data?.type? // .data?.objectType? // "") | tostring) | endswith("::package::UpgradeCap")) | (.objectId? // .data?.objectId? // empty)' objs.json 2>/dev/null | head -n 1 || true)
+          fi
+          if [ -z "$CAP" ]; then
+            echo "STOPPED: no UpgradeCap found for $EXPECTED_ADDRESS."
+            echo "Object types in this wallet (for checking):"
+            jq -r '.. | objects | (.objectType? // .type? // .data?.type? // empty) | tostring' objs.json 2>/dev/null | sort -u | head -n 40 || true
+            echo "Fix: find the UpgradeCap on https://suiscan.xyz/testnet/account/$EXPECTED_ADDRESS and paste its ID into the upgrade_cap input."
+            exit 1
+          fi
           echo "Upgrade capability: $CAP"
+
           cd move/kick
           set +e
           sui client upgrade --upgrade-capability "$CAP" --gas-budget 300000000 --json > up.txt 2>&1
@@ -32,7 +52,7 @@ jobs:
           set -e
           if [ "$PSTATUS" -ne 0 ]; then sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' up.txt | tail -n 60; echo "STOPPED: upgrade failed"; exit 1; fi
           sed -n '/^{/,$p' up.txt > up.json
-          PKG=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' up.json)
-          echo "KICK_PACKAGE_ID (unchanged, upgraded): 0xd891a7530adc1b6c88c7ac1d9f783ddb36d73168ea75baf96b7c6c64d81e70e0"
-          echo "New version package: $PKG"
-          { echo "### Kick package upgraded (testnet)"; echo "- Same package ID as before, with mint_house added"; echo "- New version: \`$PKG\`"; } >> "$GITHUB_STEP_SUMMARY"
+          NEW=$(jq -r '.objectChanges[] | select(.type=="published") | .packageId' up.json)
+          if [ -z "$NEW" ] || [ "$NEW" = "null" ]; then sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' up.txt | tail -n 60; echo "STOPPED: no new package version found in the output"; exit 1; fi
+          echo "New version: $NEW"
+          { echo "### Kick package upgraded (testnet)"; echo "- Same package ID as before, with the fixed-odds module added"; echo "- New version: \`$NEW\`"; } >> "$GITHUB_STEP_SUMMARY"
