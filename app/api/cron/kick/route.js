@@ -14,7 +14,7 @@ export async function GET(req) {
   if (!secret || (u.searchParams.get("secret") !== secret && req.headers.get("authorization") !== `Bearer ${secret}`)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const step = u.searchParams.get("step") ?? "all";
   const now = Date.now();
-  const deadline = now + 50_000;
+  const deadline = now + 34_000;
   const db = supabaseAdmin();
   const out = {};
   try {

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
-import ContactSupport from "@/components/support/ContactSupport";
 import MarketsList from "@/components/kick/MarketsList";
 import RedeemButton from "@/components/kick/RedeemButton";
 import Competition from "@/components/kick/Competition";
-import Explain from "@/components/Explain";
+import KickHero from "@/components/kick/KickHero";
+import PositionCard from "@/components/kick/PositionCard";
+import KickTabs from "@/components/kick/KickTabs";
+import ContactSupport from "@/components/support/ContactSupport";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { loadRounds, loadMyKicks } from "@/lib/kick/markets/load";
@@ -13,6 +15,7 @@ import { kickBalance } from "@/lib/kick/balance";
 import { formatKick } from "@/lib/kick/balance-rules";
 import { hasClaimed } from "@/lib/kick/claimed";
 import { standings } from "@/lib/kick/competition";
+import { potentialPayout } from "@/lib/kick/potential";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +32,76 @@ export default async function Kick() {
   ]);
   const balance = formatKick(units);
   const claimed = hasClaimed(account, units);
+  const roundById = Object.fromEntries(rounds.map((r) => [r.id, r]));
+
+  // Open positions: your kicks in rounds that are still open, with the current price and a payout estimate.
+  const positions = mine
+    .filter((e) => e.status === "open" && roundById[e.roundId]?.state === "open")
+    .map((e) => {
+      const r = roundById[e.roundId];
+      return { ...e, round: r, potential: potentialPayout({ kind: r.kind, side: e.side, stake: e.stake, chanceBps: null, longPool: r.long, shortPool: r.short }) };
+    });
+
+  // Hero: real figures only.
+  const graded = mine.filter((e) => ["won", "lost", "refunded"].includes(e.status));
+  const decided = graded.filter((e) => e.status !== "refunded");
+  const wins = decided.filter((e) => e.status === "won").length;
+  const winRate = decided.length ? (wins / decided.length) * 100 : null;
+  const staked = graded.reduce((a, e) => a + e.stake, 0);
+  const net = graded.reduce((a, e) => a + ((e.payout ?? 0) - e.stake), 0);
+  const yourReturn = staked ? (net / staked) * 100 : null;
+
   const top = standings(allSettled ?? []);
   const topIds = top.map((t) => t.user_id);
   const { data: topProfiles } = topIds.length ? await db.from("profiles").select("id, handle").in("id", topIds) : { data: [] };
   const handles = Object.fromEntries((topProfiles ?? []).map((p) => [p.id, p.handle]));
   const withdrawable = mine.filter((e) => ["settled", "void"].includes(e.roundState) && !e.redeemed && e.status !== "lost");
+  const settledRounds = rounds.filter((r) => r.state === "settled" || r.state === "void");
+
+  const sections = {
+    positions: positions.length ? (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between"><p className="text-base font-semibold text-white">Opened positions ({positions.length})</p></div>
+        {positions.map((p) => <PositionCard key={p.id} p={p} />)}
+      </div>) : null,
+    markets: (
+      <div className="space-y-3">
+        <p className="text-base font-semibold text-white">Markets</p>
+        <MarketsList rounds={rounds} canKick={Boolean(kickAddress)} />
+        {!user && <p className="text-xs text-white/50"><Link href="/" className="text-accent underline">Sign in</Link> to kick.</p>}
+        {user && !kickAddress && <p className="text-xs text-white/50">Get testnet KICK first, then you can kick. <Link href="/kick/claim" className="text-accent underline">Get testnet KICK</Link></p>}
+        {user && kickAddress && !claimed && <p className="text-xs text-white/50"><Link href="/kick/claim" className="text-accent underline">Get testnet KICK</Link></p>}
+      </div>),
+    settled: (
+      <div className="space-y-2">
+        <p className="text-base font-semibold text-white">Settled rounds</p>
+        {settledRounds.map((r) => (
+          <div key={r.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-panel p-3 text-xs">
+            <span className="text-white">{r.asset} · {r.horizon}</span>
+            <span className="text-white/60">{r.state === "void" ? "Refunded" : r.outcome === "long" ? "GREEN won" : "RED won"}</span>
+          </div>))}
+        {!settledRounds.length && <p className="rounded-2xl border border-dashed border-white/15 p-4 text-center text-xs text-white/55">No settled rounds yet.</p>}
+      </div>),
+    competition: (
+      <div className="space-y-3">
+        <Competition rows={top} handles={handles} />
+      </div>),
+    mine: (
+      <div className="space-y-2">
+        <p className="text-base font-semibold text-white">My kicks</p>
+        {withdrawable.length > 0 && <p className="text-xs text-accent">{withdrawable.length} round{withdrawable.length > 1 ? "s" : ""} ready to withdraw.</p>}
+        {mine.map((e) => (
+          <div key={e.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-panel p-3 text-xs">
+            <div className="min-w-0">
+              <p className="font-semibold text-white">{e.asset} {e.horizon} · {e.side === "long" ? "GREEN" : "RED"} · {e.stake.toLocaleString("en-US")} KICK</p>
+              <p className="text-white/50">{e.status}{e.payout != null ? ` · pays ${e.payout.toFixed(2)}` : ""}{e.redeemed ? " · withdrawn" : ""}</p>
+            </div>
+            {withdrawable.some((w) => w.id === e.id) && <RedeemButton roundId={e.roundId} />}
+          </div>))}
+        {!mine.length && <p className="rounded-2xl border border-dashed border-white/15 p-4 text-center text-xs text-white/55">You have not kicked yet.</p>}
+      </div>),
+  };
+
   return (
     <main className="mx-auto min-h-dvh max-w-md md:max-w-2xl px-4 pb-28 pt-4">
       <header className="flex items-center justify-between gap-2">
@@ -41,46 +109,29 @@ export default async function Kick() {
           <img src="/logo.png" alt="" width={24} height={24} className="shrink-0" />
           <span className="whitespace-nowrap text-base font-bold text-white">Proof<span className="text-accent">Kick</span></span>
         </Link>
-        <div className="flex shrink-0 items-center gap-1">
-          <span className="whitespace-nowrap rounded-full border border-accent/40 px-2 py-0.5 text-[10px] font-semibold text-white">{balance ?? "—"} KICK</span>
-        </div>
+        <span className="whitespace-nowrap rounded-full border border-accent/40 px-2.5 py-1 text-[11px] font-semibold text-white">{balance ?? "—"} KICK</span>
       </header>
 
-      <section className="mt-5">
-        <h1 className="flex items-center gap-2 text-[clamp(26px,8vw,34px)] font-semibold leading-tight text-white">Kick Markets <span className="rounded-full border border-accent/50 px-2 py-0.5 text-[11px] font-medium text-accent">Testnet</span></h1>
-        <p className="mt-1 flex items-center gap-1 text-sm text-white/55">24H and weekly rounds · play money <Explain text="Kick markets are games of chance on testnet. You stake play-money KICK on whether the price closes up (GREEN) or down (RED). It is not a real-money market and it is 18+ only." /></p>
-      </section>
+      <div className="mt-5"><KickHero totalRounds={rounds.length} winRate={winRate} yourReturn={yourReturn} /></div>
 
-      <section className="mt-4">
-        <div className="mb-3 flex items-center gap-1 text-base font-semibold text-white">Rounds <Explain text="24H rounds open at 12:00 UTC, take entries until 18:00 UTC, and settle 24 hours after opening from the price. Weekly rounds take entries until the last 24 hours before they close." /></div>
-        <MarketsList rounds={rounds} canKick={Boolean(kickAddress)} />
-        {!user && <p className="mt-3 text-xs text-white/50"><Link href="/" className="text-accent underline">Sign in</Link> to kick.</p>}
-        {user && !kickAddress && <p className="mt-3 text-xs text-white/50">Get testnet KICK first, then you can kick. <Link href="/kick/claim" className="text-accent underline">Get testnet KICK</Link></p>}
-        {user && kickAddress && !claimed && <p className="mt-3 text-xs text-white/50"><Link href="/kick/claim" className="text-accent underline">Get testnet KICK</Link></p>}
-      </section>
-
-      <section className="mt-6"><Competition rows={top} handles={handles} /></section>
+      <div className="mt-5"><KickTabs sections={sections} /></div>
 
       {user && (
-        <section className="mt-6">
-          <div className="flex items-center gap-1 text-base font-semibold text-white">My kicks <Explain text="Your kicks, with their status. Winners and refunds show a Withdraw button once the round has settled." /></div>
-          {withdrawable.length > 0 && <p className="mt-1 text-xs text-accent">{withdrawable.length} round{withdrawable.length > 1 ? "s" : ""} ready to withdraw.</p>}
-          <div className="mt-3 space-y-2">
-            {mine.map((e) => (
-              <div key={e.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-panel p-3 text-xs">
-                <div className="min-w-0">
-                  <p className="font-semibold text-white">{e.asset} {e.horizon} · {e.side === "long" ? "GREEN" : "RED"} · {e.stake.toLocaleString("en-US")} KICK</p>
-                  <p className="text-white/50">{e.status}{e.payout != null ? ` · pays ${e.payout.toFixed(2)}` : ""}{e.redeemed ? " · withdrawn" : ""}</p>
-                </div>
-                {withdrawable.some((w) => w.id === e.id) && <RedeemButton roundId={e.roundId} />}
-              </div>))}
-            {!mine.length && <p className="rounded-2xl border border-dashed border-white/15 p-4 text-center text-xs text-white/55">You have not kicked yet.</p>}
+        <section className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-panel p-4">
+            <p className="text-sm font-semibold text-white">My Kicks</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{balance ?? "—"} <span className="text-sm text-white/60">KICK</span></p>
+            <p className="mt-1 text-[11px] text-white/50">Your testnet balance for kicking. Play money.</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-panel p-4">
+            <p className="flex items-center gap-2 text-sm font-semibold text-white">Play Money Competition <span className="rounded-full border border-accent/50 px-2 py-0.5 text-[10px] text-accent">Testnet</span></p>
+            <p className="mt-2 text-xs text-white/55">Coming soon. Rules and any prizes are not set yet.</p>
           </div>
         </section>
       )}
 
       <p className="mt-6 rounded-2xl border border-white/10 bg-panel px-4 py-3 text-xs text-white/60">Testnet · KICK has no real value · 18+ only</p>
-      <div className="mt-6"><ContactSupport /></div>
+      <div className="mt-4"><ContactSupport /></div>
       <BottomNav />
     </main>
   );
