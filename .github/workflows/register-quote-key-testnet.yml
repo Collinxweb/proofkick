@@ -22,7 +22,7 @@ jobs:
         env:
           KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
           EXPECTED_ADDRESS: "0x745c455dbb94ea713c13c8d3cf9c7c6b80cf7a78eb86c710a378087297657f97"
-          ADMIN_CAP: "0x4b579682e9d959b0e7081df9b1aeaa3249e283d1714340b9930e0fb4bc6d32b7"
+          ADMIN_CAP: "0x73f67253b50e59088310637010bd598e2d87161d1b164a148c432bfcd95c5862"
           PKG: ${{ inputs.package_id }}
           QKEY: ${{ inputs.quote_key }}
         run: |
