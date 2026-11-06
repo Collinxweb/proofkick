@@ -1,0 +1,50 @@
+name: Register quote key (testnet)
+on:
+  workflow_dispatch:
+    inputs:
+      package_id:
+        description: "The 'New version' package ID from the Upgrade Kick package run summary"
+        required: true
+      quote_key:
+        description: "The quoteKey list from /api/kick/quote/pubkey, as a JSON array of 32 numbers"
+        required: true
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Sui CLI
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/MystenLabs/suiup/main/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/suiup" install sui@testnet -y
+      - name: Register the quote key on testnet
+        env:
+          KICK_DEPLOYER_KEY: ${{ secrets.KICK_DEPLOYER_KEY }}
+          EXPECTED_ADDRESS: "0x745c455dbb94ea713c13c8d3cf9c7c6b80cf7a78eb86c710a378087297657f97"
+          ADMIN_CAP: "0x4b579682e9d959b0e7081df9b1aeaa3249e283d1714340b9930e0fb4bc6d32b7"
+          PKG: ${{ inputs.package_id }}
+          QKEY: ${{ inputs.quote_key }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KICK_DEPLOYER_KEY:-}" ]; then echo "STOPPED: KICK_DEPLOYER_KEY is missing or empty."; exit 1; fi
+          if ! echo "$QKEY" | jq -e 'type=="array" and length==32 and all(.[]; type=="number" and . >= 0 and . <= 255)' >/dev/null; then
+            echo "STOPPED: quote key must be a JSON array of exactly 32 numbers, from the pubkey page."; exit 1
+          fi
+          sui client new-env --alias kick-testnet --rpc https://fullnode.testnet.sui.io:443 >/dev/null 2>&1 || true
+          printf 'y\nhttps://fullnode.testnet.sui.io:443\nkick-testnet\n0\n' | sui client envs >/dev/null 2>&1 || true
+          sui keytool import "$KICK_DEPLOYER_KEY" ed25519 >/dev/null
+          sui client switch --env kick-testnet >/dev/null
+          sui client switch --address "$EXPECTED_ADDRESS" >/dev/null
+          ACTIVE=$(sui client active-address | tr -d '[:space:]')
+          if [ "$ACTIVE" != "$EXPECTED_ADDRESS" ]; then echo "STOPPED: active address is $ACTIVE"; exit 1; fi
+          set +e
+          sui client call --package "$PKG" --module fixed --function create_config --args "$ADMIN_CAP" "$QKEY" --gas-budget 100000000 --json > out.txt 2>&1
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ]; then sed -E 's/suiprivkey[0-9a-zA-Z]+/[redacted]/g' out.txt | tail -n 60; echo "STOPPED: create_config failed. If the message says function not found, the package ID is not the upgraded version."; exit 1; fi
+          sed -n '/^{/,$p' out.txt > call.json
+          CFG=$(jq -r '.objectChanges[] | select(.type=="created") | select(.objectType|endswith("::fixed::FixedConfig")) | .objectId' call.json)
+          if [ -z "$CFG" ] || [ "$CFG" = "null" ]; then echo "STOPPED: transaction ran but no FixedConfig was created. Check the output."; cat call.json | head -n 80; exit 1; fi
+          echo "KICK_FIXED_CONFIG_ID=$CFG"
+          { echo "### Quote key registered (testnet)"; echo "- FixedConfig (shared): \`$CFG\`"; echo "- Save this as the Vercel variable KICK_FIXED_CONFIG_ID"; } >> "$GITHUB_STEP_SUMMARY"
