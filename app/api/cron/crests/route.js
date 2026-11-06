@@ -45,8 +45,11 @@ export async function GET(req) {
   const { data: fx } = await db.from("fixtures").select("home_team, away_team").gt("kickoff_at", new Date().toISOString())
     .lt("kickoff_at", new Date(Date.now() + 7 * 864e5).toISOString()).limit(400);
   const names = [...new Set((fx ?? []).flatMap((f) => [f.home_team, f.away_team]))];
-  const { data: rows } = names.length ? await db.from("team_crests").select("name, badge, source").in("name", names) : { data: [] };
-  const done = new Set((rows ?? []).filter((r) => r.source === "manual" || (r.badge ?? "").includes(CACHED)).map((r) => r.name));
+  // Read the whole (small) table and compare names here. A long name filter was returning only part of the rows.
+  const { data: rows, error: readErr } = await db.from("team_crests").select("name, badge, source");
+  if (readErr) return NextResponse.json({ error: `could not read team_crests: ${readErr.message}` }, { status: 500 });
+  const wanted = new Set(names);
+  const done = new Set((rows ?? []).filter((r) => wanted.has(r.name) && (r.source === "manual" || (r.badge ?? "").includes(CACHED))).map((r) => r.name));
   const todo = names.filter((n) => !done.has(n));
   const report = { clubs: names.length, alreadyDone: done.size, remaining: todo.length, byCompetition: {}, cached: 0, linkOnly: 0, unmatched: [], notes: [] };
   if (!todo.length) return NextResponse.json({ ...report, notes: ["all clubs are done"] });
