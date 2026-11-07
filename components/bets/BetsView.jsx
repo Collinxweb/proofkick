@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { ArrowUp, ArrowRight, Clock, Check, Trophy } from "lucide-react";
+import { ArrowUp, ArrowRight, Clock, Check, Trophy, Share2 } from "lucide-react";
 
 const LABEL = { home: "Home", draw: "Draw", away: "Away" };
 const FILTERS = [["all", "All"], ["today", "Today"], ["week", "Last 7 days"]];
@@ -17,6 +17,14 @@ const badge = (status) => status === "pending"
   : status === "won" ? <span className="flex items-center gap-1 rounded-full border border-accent/50 px-3 py-1 text-xs text-accent"><Check size={12} />Won</span>
   : status === "lost" ? <span className="rounded-full border border-red-400/50 px-3 py-1 text-xs text-red-400">Lost</span>
   : <span className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/60">Void</span>;
+
+// The share page for a call or a multi: it has the card image, download and the share buttons.
+const shareHref = (it) => (it.type === "multi" ? `/t/${it.id}` : `/p/${it.id}`);
+const ShareLink = ({ it }) => (
+  <a href={shareHref(it)} className="flex items-center gap-1.5 rounded-full border border-white/20 px-3 py-1.5 text-xs text-white/80 hover:border-accent hover:text-accent">
+    <Share2 size={12} />Share
+  </a>
+);
 
 export default function BetsView({ items, stats }) {
   const [tab, setTab] = useState("open");
@@ -63,7 +71,10 @@ export default function BetsView({ items, stats }) {
                   <span className="text-[11px] text-white/50">{l.status}</span>
                 </div>))}
             </div>
-            <p className="mt-3 text-[11px] text-white/50">{it.stake ? `Stake ${it.stake} KICK` : "Recorded, no stake"}{it.grossPayout != null ? ` · returns ${it.grossPayout}` : ""}</p>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-white/50">{it.stake ? `Stake ${it.stake} KICK` : "Recorded, no stake"}{it.grossPayout != null ? ` · returns ${it.grossPayout}` : ""}</p>
+              <ShareLink it={it} />
+            </div>
           </div>
         ) : (
           <div key={it.id} className="rounded-2xl border border-white/10 bg-panel p-4">
@@ -93,6 +104,7 @@ export default function BetsView({ items, stats }) {
                 )}
               </div>
             </div>
+            <div className="mt-3 flex justify-end"><ShareLink it={it} /></div>
           </div>))}
         {!shown.length && <p className="rounded-2xl border border-dashed border-white/15 p-6 text-center text-sm text-white/55">No {tab === "open" ? "open" : "settled"} calls{range !== "all" ? " for this range" : ""} yet.</p>}
       </div>
