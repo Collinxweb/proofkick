@@ -17,6 +17,7 @@ export async function POST(req) {
   if (!prof?.kick_address) return NextResponse.json({ error: "Claim testnet KICK without a wallet first." }, { status: 400 });
   const { data: round } = await db.from("kick_rounds").select("*").eq("id", body.roundId).maybeSingle();
   if (!round?.chain_object_id) return NextResponse.json({ error: "That round is not open on-chain." }, { status: 404 });
+  if (round.kind === "fixed") return NextResponse.json({ error: "This market uses fixed odds. Use the fixed-odds kick." }, { status: 400 });
   const r = await placeKick({ db, userId: user.id, round, side: body.side, amount: body.amount });
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
   return NextResponse.json({ ok: true, testnetTx: r.testnetTx, receipt: r.receipt, amount: r.amount });

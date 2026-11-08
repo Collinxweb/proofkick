@@ -7,6 +7,7 @@ import Competition from "@/components/kick/Competition";
 import KickHero from "@/components/kick/KickHero";
 import PositionCard from "@/components/kick/PositionCard";
 import KickTabs from "@/components/kick/KickTabs";
+import FixedMarkets from "@/components/kick/FixedMarkets";
 import ContactSupport from "@/components/support/ContactSupport";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -67,7 +68,8 @@ export default async function Kick() {
     markets: (
       <div className="space-y-3">
         <p className="text-base font-semibold text-white">Markets</p>
-        <MarketsList rounds={rounds} canKick={Boolean(kickAddress)} />
+        <MarketsList rounds={rounds.filter((r) => r.kind !== "fixed")} canKick={Boolean(kickAddress)} />
+        <FixedMarkets rounds={rounds.filter((r) => r.kind === "fixed")} canKick={Boolean(kickAddress)} />
         {!user && <p className="text-xs text-white/50"><Link href="/" className="text-accent underline">Sign in</Link> to kick.</p>}
         {user && !kickAddress && <p className="text-xs text-white/50">Get testnet KICK first, then you can kick. <Link href="/kick/claim" className="text-accent underline">Get testnet KICK</Link></p>}
         {user && kickAddress && !claimed && <p className="text-xs text-white/50"><Link href="/kick/claim" className="text-accent underline">Get testnet KICK</Link></p>}
