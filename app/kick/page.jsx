@@ -1,14 +1,13 @@
 import Link from "next/link";
-import Logo from "@/components/Logo";
 import BottomNav from "@/components/BottomNav";
 import MarketsList from "@/components/kick/MarketsList";
+import FixedMarkets from "@/components/kick/FixedMarkets";
 import RedeemButton from "@/components/kick/RedeemButton";
+import FixedRedeemButton from "@/components/kick/FixedRedeemButton";
 import Competition from "@/components/kick/Competition";
 import KickHero from "@/components/kick/KickHero";
 import PositionCard from "@/components/kick/PositionCard";
 import KickTabs from "@/components/kick/KickTabs";
-import FixedMarkets from "@/components/kick/FixedMarkets";
-import FixedRedeemButton from "@/components/kick/FixedRedeemButton";
 import ContactSupport from "@/components/support/ContactSupport";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -20,6 +19,14 @@ import { standings } from "@/lib/kick/competition";
 import { potentialPayout } from "@/lib/kick/potential";
 
 export const dynamic = "force-dynamic";
+
+// Why a round was refunded, in words people can follow.
+function refundReason(r) {
+  if (r.kind !== "fixed" && !(r.long > 0 && r.short > 0)) {
+    return "One-sided round: everyone staked the same side, so there were no opposing stakes to pay winners. Stakes are refunded.";
+  }
+  return "Price did not move: the closing price equalled the opening price. Stakes are refunded.";
+}
 
 export default async function Kick() {
   const { data: { user } } = await supabaseServer().auth.getUser();
@@ -36,7 +43,6 @@ export default async function Kick() {
   const claimed = hasClaimed(account, units);
   const roundById = Object.fromEntries(rounds.map((r) => [r.id, r]));
 
-  // Open positions: your kicks in rounds that are still open, with the current price and a payout estimate.
   const positions = mine
     .filter((e) => e.status === "open" && roundById[e.roundId]?.state === "open")
     .map((e) => {
@@ -44,13 +50,13 @@ export default async function Kick() {
       return { ...e, round: r, potential: potentialPayout({ kind: r.kind, side: e.side, stake: e.stake, chanceBps: null, longPool: r.long, shortPool: r.short }) };
     });
 
-  // Hero: real figures only.
+  // Record figures. A refund is neither a win nor a loss, so it leaves the return at zero.
   const graded = mine.filter((e) => ["won", "lost", "refunded"].includes(e.status));
   const decided = graded.filter((e) => e.status !== "refunded");
   const wins = decided.filter((e) => e.status === "won").length;
   const winRate = decided.length ? (wins / decided.length) * 100 : null;
-  const staked = graded.reduce((a, e) => a + e.stake, 0);
-  const net = graded.reduce((a, e) => a + ((e.payout ?? 0) - e.stake), 0);
+  const staked = decided.reduce((a, e) => a + e.stake, 0);
+  const net = decided.reduce((a, e) => a + ((e.payout ?? 0) - e.stake), 0);
   const yourReturn = staked ? (net / staked) * 100 : null;
 
   const top = standings(allSettled ?? []);
@@ -66,7 +72,7 @@ export default async function Kick() {
   const sections = {
     positions: positions.length ? (
       <div className="space-y-3">
-        <div className="flex items-center justify-between"><p className="text-base font-semibold text-white">Opened positions ({positions.length})</p></div>
+        <p className="text-base font-semibold text-white">Opened positions ({positions.length})</p>
         {positions.map((p) => <PositionCard key={p.id} p={p} />)}
       </div>) : null,
     markets: (
@@ -82,9 +88,13 @@ export default async function Kick() {
       <div className="space-y-2">
         <p className="text-base font-semibold text-white">Settled rounds</p>
         {settledRounds.map((r) => (
-          <div key={r.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-panel p-3 text-xs">
-            <span className="text-white">{r.asset} · {r.horizon}</span>
-            <span className="text-white/60">{r.state === "void" ? "Refunded" : r.outcome === "long" ? "GREEN won" : "RED won"}</span>
+          <div key={r.id} className="rounded-2xl border border-white/10 bg-panel p-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-white">{r.asset} · {r.horizon}</span>
+              <span className="text-white/60">{r.state === "void" ? "Refunded" : r.outcome === "long" ? "GREEN won" : "RED won"}</span>
+            </div>
+            {r.state === "void" && <p className="mt-2 text-white/60">{refundReason(r)}</p>}
+            {r.state === "void" && <p className="mt-1 text-white/45">Your stake returns to your balance when you press Withdraw in My Kicks.</p>}
           </div>))}
         {!settledRounds.length && <p className="rounded-2xl border border-dashed border-white/15 p-4 text-center text-xs text-white/55">No settled rounds yet.</p>}
       </div>),
@@ -95,12 +105,12 @@ export default async function Kick() {
     mine: (
       <div className="space-y-2">
         <p className="text-base font-semibold text-white">My kicks</p>
-        {withdrawable.length > 0 && <p className="text-xs text-accent">{withdrawable.length} round{withdrawable.length > 1 ? "s" : ""} ready to withdraw.</p>}
+        {withdrawable.length > 0 && <p className="text-xs text-accent">{withdrawable.length} to withdraw. Pressing Withdraw returns the stake, plus any winnings, to your balance.</p>}
         {mine.map((e) => (
           <div key={e.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-panel p-3 text-xs">
             <div className="min-w-0">
               <p className="font-semibold text-white">{e.asset} {e.horizon} · {e.side === "long" ? "GREEN" : "RED"} · {e.stake.toLocaleString("en-US")} KICK</p>
-              <p className="text-white/50">{e.status}{e.payout != null ? ` · pays ${e.payout.toFixed(2)}` : ""}{e.redeemed ? " · withdrawn" : ""}</p>
+              <p className="text-white/50">{e.status === "refunded" ? "refunded" : e.status}{e.payout != null && e.status === "won" ? ` · pays ${e.payout.toFixed(2)}` : ""}{e.redeemed ? " · withdrawn" : ""}</p>
             </div>
             {withdrawable.some((w) => w.id === e.id) && (roundById[e.roundId]?.kind === "fixed" ? <FixedRedeemButton entryId={e.id} /> : <RedeemButton roundId={e.roundId} />)}
           </div>))}
@@ -119,7 +129,6 @@ export default async function Kick() {
       </header>
 
       <div className="mt-5"><KickHero totalRounds={rounds.length} winRate={winRate} yourReturn={yourReturn} /></div>
-
       <div className="mt-5"><KickTabs sections={sections} /></div>
 
       {user && (
@@ -127,7 +136,7 @@ export default async function Kick() {
           <div className="rounded-2xl border border-white/10 bg-panel p-4">
             <p className="text-sm font-semibold text-white">My Kicks</p>
             <p className="mt-2 text-2xl font-semibold text-white">{balance ?? "—"} <span className="text-sm text-white/60">KICK</span></p>
-            <p className="mt-1 text-[11px] text-white/50">Your testnet balance for kicking. Play money.</p>
+            <p className="mt-1 text-[11px] text-white/50">Your testnet balance for kicking. Play money. Stakes on open kicks are held until the round settles.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-panel p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-white">Play Money Competition <span className="rounded-full border border-accent/50 px-2 py-0.5 text-[10px] text-accent">Testnet</span></p>
