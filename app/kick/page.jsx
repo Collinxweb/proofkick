@@ -28,7 +28,8 @@ function refundReason(r) {
   return "Price did not move: the closing price equalled the opening price. Stakes are refunded.";
 }
 
-export default async function Kick() {
+export default async function Kick({ searchParams }) {
+  const sp = await searchParams;
   const { data: { user } } = await supabaseServer().auth.getUser();
   const db = supabaseAdmin();
   const account = user ? (await db.from("profiles").select("kick_address, sui_address, kick_claimed_at").eq("id", user.id).maybeSingle()).data : null;
@@ -78,6 +79,7 @@ export default async function Kick() {
     markets: (
       <div className="space-y-3">
         <p className="text-base font-semibold text-white">Markets</p>
+        <p className="-mt-2 text-xs leading-relaxed text-white/55">24H rounds settle 24 hours after they open. Your stake is held until then. When a round settles, press Withdraw in My Kicks to get your stake, or any winnings, back to your balance.</p>
         <MarketsList rounds={rounds.filter((r) => r.kind !== "fixed")} canKick={Boolean(kickAddress)} />
         <FixedMarkets rounds={rounds.filter((r) => r.kind === "fixed")} canKick={Boolean(kickAddress)} />
         {!user && <p className="text-xs text-white/50"><Link href="/" className="text-accent underline">Sign in</Link> to kick.</p>}
@@ -129,7 +131,7 @@ export default async function Kick() {
       </header>
 
       <div className="mt-5"><KickHero totalRounds={rounds.length} winRate={winRate} yourReturn={yourReturn} /></div>
-      <div className="mt-5"><KickTabs sections={sections} /></div>
+      <div className="mt-5"><KickTabs sections={sections} initialTab={sp?.tab ?? "all"} withdrawCount={withdrawable.length} /></div>
 
       {user && (
         <section className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
