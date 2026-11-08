@@ -8,6 +8,7 @@ import KickHero from "@/components/kick/KickHero";
 import PositionCard from "@/components/kick/PositionCard";
 import KickTabs from "@/components/kick/KickTabs";
 import FixedMarkets from "@/components/kick/FixedMarkets";
+import FixedRedeemButton from "@/components/kick/FixedRedeemButton";
 import ContactSupport from "@/components/support/ContactSupport";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -56,7 +57,10 @@ export default async function Kick() {
   const topIds = top.map((t) => t.user_id);
   const { data: topProfiles } = topIds.length ? await db.from("profiles").select("id, handle").in("id", topIds) : { data: [] };
   const handles = Object.fromEntries((topProfiles ?? []).map((p) => [p.id, p.handle]));
-  const withdrawable = mine.filter((e) => ["settled", "void"].includes(e.roundState) && !e.redeemed && e.status !== "lost");
+  const withdrawable = mine.filter((e) => {
+    const rr = roundById[e.roundId];
+    return rr && ["settled", "void"].includes(rr.state) && !e.redeemed && (e.status === "won" || e.status === "refunded");
+  });
   const settledRounds = rounds.filter((r) => r.state === "settled" || r.state === "void");
 
   const sections = {
@@ -98,7 +102,7 @@ export default async function Kick() {
               <p className="font-semibold text-white">{e.asset} {e.horizon} · {e.side === "long" ? "GREEN" : "RED"} · {e.stake.toLocaleString("en-US")} KICK</p>
               <p className="text-white/50">{e.status}{e.payout != null ? ` · pays ${e.payout.toFixed(2)}` : ""}{e.redeemed ? " · withdrawn" : ""}</p>
             </div>
-            {withdrawable.some((w) => w.id === e.id) && <RedeemButton roundId={e.roundId} />}
+            {withdrawable.some((w) => w.id === e.id) && (roundById[e.roundId]?.kind === "fixed" ? <FixedRedeemButton entryId={e.id} /> : <RedeemButton roundId={e.roundId} />)}
           </div>))}
         {!mine.length && <p className="rounded-2xl border border-dashed border-white/15 p-4 text-center text-xs text-white/55">You have not kicked yet.</p>}
       </div>),
