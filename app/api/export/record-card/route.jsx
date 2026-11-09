@@ -10,21 +10,21 @@ const G = "#19d36b";
 const flex = (x) => ({ display: "flex", ...x });
 const shortId = (x) => (x ? `${String(x).slice(0, 12)}…${String(x).slice(-8)}` : null);
 const stamp = (iso) => new Date(iso).toISOString().slice(0, 16).replace("T", " ") + " UTC";
+const PICK = (p) => (p.selection === "home" ? p.fixtures?.home_team : p.selection === "away" ? p.fixtures?.away_team : "Draw");
 
-// The signed-in user's record, with their 10 most recent locks: each shows its Walrus blob ID and lock time.
+// The signed-in user's record, with their 10 most recent locks: what was locked, its Walrus blob ID, and when.
 export async function GET() {
   const { data: { user } } = await supabaseServer().auth.getUser();
   if (!user) return new Response("Sign in first.", { status: 401 });
   const db = supabaseAdmin();
 
   const { data: picks } = await db.from("picks")
-    .select("status, odds_taken, locked_at, memory_blob_id, anchor_digest")
+    .select("status, odds_taken, locked_at, memory_blob_id, anchor_digest, selection, fixtures(home_team, away_team)")
     .eq("user_id", user.id).order("locked_at", { ascending: false }).limit(500);
   const { data: prof } = await db.from("profiles").select("handle").eq("id", user.id).maybeSingle();
   const { data: kicks } = await db.from("kick_entries").select("status").eq("user_id", user.id);
 
   const rows = picks ?? [];
-  const rec = computeRecord(rows.map((r) => ({ result: r.status, odds_taken: r.odds_taken, graded_at: r.locked_at })));
   const won = rows.filter((r) => r.status === "won").length;
   const lost = rows.filter((r) => r.status === "lost").length;
   const hit = won + lost ? `${((won / (won + lost)) * 100).toFixed(1)}%` : "—";
@@ -54,10 +54,15 @@ export async function GET() {
           <div style={flex({ fontSize: 22, letterSpacing: 3, color: "rgba(255,255,255,0.7)" })}>RECENT 10 LOCKS</div>
           <div style={flex({ fontSize: 18, color: "rgba(255,255,255,0.55)", marginTop: 6 })}>Each lock is saved to Walrus Memory and timestamped on Sui.</div>
           {recent.length ? recent.map((r, i) => (
-            <div key={i} style={flex({ alignItems: "center", justifyContent: "space-between", marginTop: 10, padding: "10px 14px", borderRadius: 14, background: "rgba(255,255,255,0.04)" })}>
-              <div style={flex({ fontSize: 18, color: "rgba(255,255,255,0.7)", width: 230 })}>{stamp(r.locked_at)}</div>
-              <div style={flex({ fontSize: 20, color: r.memory_blob_id ? "#fff" : "rgba(255,255,255,0.4)" })}>{shortId(r.memory_blob_id) ?? "proof pending"}</div>
-              <div style={flex({ fontSize: 18, color: r.anchor_digest ? G : "rgba(255,255,255,0.4)", width: 120, textAlign: "right" })}>{r.anchor_digest ? "Sui ✓" : "Sui —"}</div>
+            <div key={i} style={flex({ flexDirection: "column", marginTop: 10, padding: "10px 14px", borderRadius: 14, background: "rgba(255,255,255,0.04)" })}>
+              <div style={flex({ alignItems: "center", justifyContent: "space-between" })}>
+                <div style={flex({ fontSize: 18, color: "rgba(255,255,255,0.6)" })}>{stamp(r.locked_at)}</div>
+                <div style={flex({ fontSize: 18, color: r.anchor_digest ? G : "rgba(255,255,255,0.4)" })}>{r.anchor_digest ? "Sui: yes" : "Sui: none"}</div>
+              </div>
+              <div style={flex({ fontSize: 22, fontWeight: 700, marginTop: 4, whiteSpace: "nowrap", overflow: "hidden" })}>
+                {`${r.fixtures?.home_team ?? "?"} vs ${r.fixtures?.away_team ?? "?"}  ·  ${PICK(r) ?? "?"} @ ${Number(r.odds_taken).toFixed(2)}`}
+              </div>
+              <div style={flex({ fontSize: 18, color: "rgba(255,255,255,0.7)", marginTop: 4 })}>{`Walrus blob  ${shortId(r.memory_blob_id) ?? "proof pending"}`}</div>
             </div>)) : <div style={flex({ fontSize: 22, color: "rgba(255,255,255,0.6)", marginTop: 14 })}>No locks yet.</div>}
         </div>
 
