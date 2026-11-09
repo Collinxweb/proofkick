@@ -7,7 +7,7 @@ export default function ExportButtons() {
         <p className="mt-1 text-xs text-white/50">The full CSV has every call, multi leg and kick, with the Sui and testnet transaction links. Open it in any spreadsheet app.</p></div>
       <div className="flex gap-2">
         <a href="/api/export?format=csv" download className={btn}>Full record (CSV)</a>
-        <a href="/api/export?format=card" download className={btn}>Summary card (PNG)</a>
+        <a href="/api/export/record-card" download className={btn}>Summary card (PNG)</a>
       </div>
     </div>
   );
