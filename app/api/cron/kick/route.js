@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { openRounds, settleExpired, retryOpenRecords, planAt } from "@/lib/kick/ops";
+import { openRounds, retryOpenRecords, planAt } from "@/lib/kick/ops";
+import { settleBatch } from "@/lib/kick/settle-batch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ async function releaseLock(db) {
   await db.from("kick_job_lock").update({ locked_until: new Date(0).toISOString() }).eq("name", "daily");
 }
 
-// Order: settle expired rounds, open new ones, then write mainnet records with the time left.
+// Order: settle expired rounds (in batches), open new ones, then write any remaining mainnet records.
 // GET ?secret=CRON_SECRET                 -> the scheduled run. Safe to call every 5 minutes.
 // GET ?secret=...&step=reset               -> archive open pool rounds, then open a fresh set starting now
 // GET ?secret=...&step=reset&start=<ms>    -> open the set at a fixed start, without archiving again
@@ -49,7 +50,7 @@ export async function GET(req) {
       out.records = await retryOpenRecords(db, deadline);
       return NextResponse.json(out);
     }
-    out.settled = await settleExpired(db, now, deadline);
+    out.settled = await settleBatch(db, now, deadline);
     out.opened = await openRounds(db, now, deadline);
     out.records = await retryOpenRecords(db, deadline);
     return NextResponse.json(out);

@@ -1,4 +1,5 @@
-// Satori (next/og) card. Every element with several children is display:flex. Shows each leg's result and the slip result.
+// Satori (next/og) card. Every element with several children is display:flex.
+import ProofLine from "@/lib/card/ProofLine";
 const G = "#19d36b", R = "#f87171";
 const initials = (n) => String(n ?? "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const flex = (extra) => ({ display: "flex", ...extra });
@@ -44,7 +45,9 @@ export default function SlipCard({ slip, logo, avatar, qr }) {
         {rows.map((s, i) => (
           <div key={i} style={flex({ alignItems: "center", height: 86, margin: "6px 0", padding: "0 20px", borderRadius: 22, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.04)" })}>
             <div style={flex({ width: 52, color: G, fontSize: 28, fontWeight: 700 })}>{String(i + 1).padStart(2, "0")}</div>
-            <div style={flex({ width: 54, height: 54, borderRadius: 27, background: "rgba(255,255,255,0.10)", alignItems: "center", justifyContent: "center", fontSize: 21, fontWeight: 700, marginRight: 18 })}>{s.crestData ? <img src={s.crestData} width={54} height={54} /> : initials(s.home)}</div>
+            <div style={flex({ width: 54, height: 54, borderRadius: 27, background: "rgba(255,255,255,0.10)", alignItems: "center", justifyContent: "center", fontSize: 21, fontWeight: 700, marginRight: 18, overflow: "hidden" })}>
+              {s.crestData ? <img src={s.crestData} width={54} height={54} /> : initials(s.home)}
+            </div>
             <div style={flex({ flexDirection: "column", flex: 1, overflow: "hidden" })}>
               <div style={flex({ fontSize: 28, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" })}>{`${s.home} vs ${s.away}`}</div>
               <div style={flex({ fontSize: 21, color: "rgba(255,255,255,0.55)", whiteSpace: "nowrap" })}>{`${s.market}  •  ${s.pick}`}</div>
@@ -75,6 +78,8 @@ export default function SlipCard({ slip, logo, avatar, qr }) {
             </div>)}
         </div>
       </div>
+
+      <ProofLine blob={slip.blob} receipt={slip.receipt} />
 
       <div style={flex({ marginTop: "auto", alignItems: "center", justifyContent: "space-between" })}>
         <div style={flex({ flexDirection: "column" })}>
