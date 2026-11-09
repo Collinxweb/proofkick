@@ -43,6 +43,14 @@ export default async function Kick({ searchParams }) {
   const balance = formatKick(units);
   const claimed = hasClaimed(account, units);
   const roundById = Object.fromEntries(rounds.map((r) => [r.id, r]));
+  // A kick can belong to an older round than the ones listed, so load the state of each round the user has kicked in.
+  const kickedRoundIds = [...new Set(mine.map((e) => e.roundId))];
+  const { data: kickedRounds } = kickedRoundIds.length
+    ? await db.from("kick_rounds").select("id, state, kind").in("id", kickedRoundIds)
+    : { data: [] };
+  for (const kr of kickedRounds ?? []) {
+    if (!roundById[kr.id]) roundById[kr.id] = { id: kr.id, state: kr.state, kind: kr.kind };
+  }
 
   const positions = mine
     .filter((e) => e.status === "open" && roundById[e.roundId]?.state === "open")
