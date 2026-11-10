@@ -121,6 +121,7 @@ export default async function Kick({ searchParams }) {
             <div className="min-w-0">
               <p className="font-semibold text-white">{e.asset} {e.horizon} · {e.side === "long" ? "GREEN" : "RED"} · {e.stake.toLocaleString("en-US")} KICK</p>
               <p className="text-white/50">{e.status === "refunded" ? "refunded" : e.status}{e.payout != null && e.status === "won" ? ` · pays ${e.payout.toFixed(2)}` : ""}{e.redeemed ? " · withdrawn" : ""}</p>
+              {e.status === "revoked" && <p className="mt-1 text-white/45">{e.revokeReason ?? "Revoked. Not claimable."}</p>}
             </div>
             {withdrawable.some((w) => w.id === e.id) && (roundById[e.roundId]?.kind === "fixed" ? <FixedRedeemButton entryId={e.id} /> : <RedeemButton roundId={e.roundId} />)}
           </div>))}
