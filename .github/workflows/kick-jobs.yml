@@ -1,5 +1,6 @@
 # Runs the Kick and football jobs on a timer, so rounds settle and open without anyone running them.
 # Needs one repository secret: CRON_SECRET (the same value as in Vercel).
+# A step fails the run unless the server answers HTTP 200, so errors show in red.
 name: ProofKick jobs
 
 on:
@@ -19,18 +20,21 @@ jobs:
         run: |
           code=$(curl -sS --max-time 70 -o settle.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=settle&secret=${SECRET}")
           echo "settle HTTP $code"; cat settle.json; echo
+          test "$code" = "200"
       - name: Open due pool rounds
         env:
           SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -sS --max-time 70 -o open.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=open&secret=${SECRET}")
           echo "open HTTP $code"; cat open.json; echo
+          test "$code" = "200"
       - name: Settle and open fixed-odds rounds
         env:
           SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -sS --max-time 70 -o fixed.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=fixed&secret=${SECRET}")
           echo "fixed HTTP $code"; cat fixed.json; echo
+          test "$code" = "200"
 
   every-ten:
     if: github.event.schedule == '*/10 * * * *' || github.event_name == 'workflow_dispatch'
@@ -42,3 +46,4 @@ jobs:
         run: |
           code=$(curl -sS --max-time 70 -o records.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=records&secret=${SECRET}")
           echo "records HTTP $code"; cat records.json; echo
+          test "$code" = "200"
