@@ -1,0 +1,44 @@
+# Runs the Kick and football jobs on a timer, so rounds settle and open without anyone running them.
+# Needs one repository secret: CRON_SECRET (the same value as in Vercel).
+name: ProofKick jobs
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  every-five:
+    if: github.event.schedule == '*/5 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Settle expired pool rounds and multis
+        env:
+          SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -sS --max-time 70 -o settle.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=settle&secret=${SECRET}")
+          echo "settle HTTP $code"; cat settle.json; echo
+      - name: Open due pool rounds
+        env:
+          SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -sS --max-time 70 -o open.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=open&secret=${SECRET}")
+          echo "open HTTP $code"; cat open.json; echo
+      - name: Settle and open fixed-odds rounds
+        env:
+          SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -sS --max-time 70 -o fixed.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=fixed&secret=${SECRET}")
+          echo "fixed HTTP $code"; cat fixed.json; echo
+
+  every-ten:
+    if: github.event.schedule == '*/10 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write missing mainnet records
+        env:
+          SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -sS --max-time 70 -o records.json -w "%{http_code}" "https://proofkick.xyz/api/cron/kick?step=records&secret=${SECRET}")
+          echo "records HTTP $code"; cat records.json; echo
