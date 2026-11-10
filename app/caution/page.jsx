@@ -14,7 +14,7 @@ async function accept() {
 const checks = [
   "I am 18 years old or older. Kick Markets are for adults only.",
   "Kick Markets are games of chance. They use play-money KICK on testnet, which has no real value, but a kick can still lose entirely and past rounds do not predict future ones.",
-  "ProofKick promises no return, profit or win rate. Calls and records show a track record, not a guaranteed result.",
+  "ProofKick makes no promise of returns or profit. Win rates and records show past results only, not a guaranteed future result.",
   "I will only kick what I can afford to lose in this game, and I will stop if it stops being fun.",
 ];
 
